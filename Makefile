@@ -1,6 +1,6 @@
 SHELL = /bin/bash
 
-NAME		= webServ
+NAME		= webServer
 CC			= g++
 CFLAGS		= -Wall -Werror -Wextra -std=c++98 -fsanitize=address
 RM			= rm -f
@@ -18,7 +18,7 @@ CYAN		=	\033[0;96m
 WHITE		=	\033[0;97m
 
 
-SRC = main.cpp parseConfig.cpp
+SRC = webserv/server.cpp parseConfig.cpp
 
 all:		$(NAME)
 

@@ -356,7 +356,7 @@ parsingConfig::parsingConfig(const std::string &file)
         if (!isSkippable(fileContent, i))
         {
             line = splitWS(getLine(fileContent, i));
-            if (line.size() > 0 && line[0] == "server")
+            if (!line.empty() && line[0] == "server")
             {
                 parseServer(fileContent, i, getCBracket(fileContent, i));
                 i = getCBracket(fileContent, i);
