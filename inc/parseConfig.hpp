@@ -10,9 +10,9 @@
 #include <fcntl.h>
 #include <cstdlib>
 
-static const char *serverProp[] = {"listen", "server_name", "error_page", "root", 0};
-static const char *locProp[] = {"method", "root", "autoindex", "index", "cgi_extension", "cgi_path", "upload_enable", "upload_path", "client_max_body_size", 0};
-static const char *methods[] = {"POST", "GET", "DELETE", 0};
+static const char *serverProp[] = {"listen", "server_name", "error_page", "root", nullptr};
+static const char *locProp[] = {"method", "root", "autoindex", "index", "cgi_extension", "cgi_path", "upload_enable", "upload_path", "client_max_body_size", nullptr};
+static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
 class parsingConfig
 {
@@ -44,26 +44,25 @@ public:
     };
 
     parsingConfig();
-    parsingConfig(std::string file);
-    std::string readFile(std::string file);
+    explicit parsingConfig(const std::string &file);
+    std::string readFile(const std::string &file);
     size_t countLines(std::string src);
     std::string getLine(std::string src, size_t n);
     std::vector<std::string> splitWS(std::string str);
-    bool isSkippable(std::string src, size_t line);
-    bool endsWithOB(std::string src, size_t line);
-    size_t getCBracket(std::string src, size_t line);
+    bool isSkippable(const std::string &src, size_t line);
+    bool endsWithOB(const std::string &src, size_t line);
+    size_t getCBracket(const std::string &src, size_t line);
     server initServer();
     location initLoc();
-    bool isPropValid(std::string name, const char **vNames);
-    std::vector<std::string> parseProp(std::string src, size_t line, std::string obj);
-    bool isMethodValid(std::string method);
-    size_t sToI(std::string str);
-    void parseLocProp(std::string src, size_t n, location &l);
-    location parseLocation(std::string src, size_t lineS, size_t lineE);
-    void parseServerProp(std::string src, size_t n, server &s);
-    void parseServer(std::string src, size_t lineS, size_t lineE);
+    bool isPropValid(const std::string &name, const char **vNames);
+    std::vector<std::string> parseProp(const std::string &src, size_t line, const std::string &obj);
+    bool isMethodValid(const std::string &method);
+    size_t sToI(const std::string &str);
+    void parseLocProp(const std::string &src, size_t n, location &l);
+    location parseLocation(const std::string &src, size_t lineS, size_t lineE);
+    void parseServerProp(const std::string &src, size_t n, server &s);
+    void parseServer(const std::string &src, size_t lineS, size_t lineE);
     void validateConfig();
-    void parseConfig(std::string file);
     std::vector<server> getServers();
     void print();
 
@@ -71,7 +70,7 @@ public:
     {
         std::string msg;
     public:
-        parsingException(std::string msg) : msg(msg) {}
+        explicit parsingException(const std::string &msg) : msg(msg) {}
         ~parsingException() throw() {}
         const char *what() const throw()
         {
@@ -81,5 +80,6 @@ public:
 
 private:
     std::vector<server> servers;
+
 };
 #endif

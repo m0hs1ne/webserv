@@ -1,4 +1,4 @@
-#include "parseConfig.hpp"
+#include "inc/parseConfig.hpp"
 
 int main(int ac, char **av)
 {

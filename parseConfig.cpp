@@ -1,6 +1,6 @@
-#include "parseConfig.hpp"
+#include "inc/parseConfig.hpp"
 
-std::string parsingConfig::readFile(std::string file)
+std::string parsingConfig::readFile(const std::string &file)
 {
     std::ifstream ifs(file);
     if (!ifs)
@@ -70,20 +70,20 @@ std::vector<std::string> parsingConfig::splitWS(std::string str)
     return res;
 }
 
-bool parsingConfig::isSkippable(std::string src, size_t line)
+bool parsingConfig::isSkippable(const std::string &src, size_t line)
 {
     std::string l;
 
     l = getLine(src, line);
-    return (splitWS(l).size() == 0 || l.size() == 0 || l[0] == '#');
+    return (splitWS(l).empty() || l.empty() || l[0] == '#');
 }
 
-bool parsingConfig::endsWithOB(std::string src, size_t line)
+bool parsingConfig::endsWithOB(const std::string &src, size_t line)
 {
     std::vector<std::string> splits;
 
     splits = splitWS(getLine(src, line));
-    if (splits.size() > 0)
+    if (!splits.empty())
     {
         if (splits[splits.size() - 1] == "{")
             return true;
@@ -91,7 +91,7 @@ bool parsingConfig::endsWithOB(std::string src, size_t line)
     return false;
 }
 
-size_t parsingConfig::getCBracket(std::string src, size_t line)
+size_t parsingConfig::getCBracket(const std::string &src, size_t line)
 {
     size_t n;
     size_t size;
@@ -138,7 +138,7 @@ parsingConfig::location parsingConfig::initLoc()
     return l;
 }
 
-bool parsingConfig::isPropValid(std::string name, const char **vNames)
+bool parsingConfig::isPropValid(const std::string &name, const char **vNames)
 {
     size_t i = 0;
 
@@ -151,7 +151,7 @@ bool parsingConfig::isPropValid(std::string name, const char **vNames)
     return false;
 }
 
-std::vector<std::string> parsingConfig::parseProp(std::string src, size_t line, std::string obj)
+std::vector<std::string> parsingConfig::parseProp(const std::string &src, size_t line, const std::string &obj)
 {
     std::vector<std::string> res;
     std::string l;
@@ -168,7 +168,7 @@ std::vector<std::string> parsingConfig::parseProp(std::string src, size_t line, 
     return res;
 }
 
-bool parsingConfig::isMethodValid(std::string method)
+bool parsingConfig::isMethodValid(const std::string &method)
 {
     size_t i = 0;
 
@@ -181,7 +181,7 @@ bool parsingConfig::isMethodValid(std::string method)
     return false;
 }
 
-size_t parsingConfig::sToI(std::string str)
+size_t parsingConfig::sToI(const std::string &str)
 {
     size_t value;
     std::istringstream convert(str);
@@ -193,7 +193,7 @@ size_t parsingConfig::sToI(std::string str)
     return value;
 }
 
-void parsingConfig::parseLocProp(std::string src, size_t n, location &l)
+void parsingConfig::parseLocProp(const std::string &src, size_t n, location &l)
 {
     std::vector<std::string> line;
     char last;
@@ -258,7 +258,7 @@ void parsingConfig::parseLocProp(std::string src, size_t n, location &l)
     }
 }
 
-parsingConfig::location parsingConfig::parseLocation(std::string src, size_t lineS, size_t lineE)
+parsingConfig::location parsingConfig::parseLocation(const std::string &src, size_t lineS, size_t lineE)
 {
     location l;
     std::vector<std::string> line;
@@ -276,7 +276,7 @@ parsingConfig::location parsingConfig::parseLocation(std::string src, size_t lin
     return l;
 }
 
-void parsingConfig::parseServerProp(std::string src, size_t n, server &s)
+void parsingConfig::parseServerProp(const std::string &src, size_t n, server &s)
 {
     std::vector<std::string> line;
 
@@ -303,7 +303,7 @@ void parsingConfig::parseServerProp(std::string src, size_t n, server &s)
         s.root = line[1];
 }
 
-void parsingConfig::parseServer(std::string src, size_t lineS, size_t lineE)
+void parsingConfig::parseServer(const std::string &src, size_t lineS, size_t lineE)
 {
     server s;
     std::vector<std::string> line;
@@ -314,7 +314,7 @@ void parsingConfig::parseServer(std::string src, size_t lineS, size_t lineE)
         if (!isSkippable(src, n))
         {
             std::vector<std::string> words = splitWS(getLine(src, n));
-            if (words.size() > 0 && words[0] == "location")
+            if (!words.empty() && words[0] == "location")
             {
                 s.locations.push_back(parseLocation(src, n, getCBracket(src, n)));
                 n = getCBracket(src, n);
@@ -328,7 +328,7 @@ void parsingConfig::parseServer(std::string src, size_t lineS, size_t lineE)
 
 void parsingConfig::validateConfig()
 {
-    if (servers.size() == 0)
+    if (servers.empty())
         throw parsingException("No server found");
     for (size_t i = 0; i < servers.size(); ++i)
     {
@@ -341,10 +341,9 @@ void parsingConfig::validateConfig()
     }
 }
 
-parsingConfig::parsingConfig(std::string file)
+parsingConfig::parsingConfig(const std::string &file)
 {
     std::string fileContent;
-    std::vector<server> servers;
     size_t i;
     size_t size;
     std::vector<std::string> line;
