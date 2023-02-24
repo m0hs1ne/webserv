@@ -25,6 +25,6 @@ namespace http
         struct sockaddr_in get_address();
         int get_listening();
         void startListen();
-    }
+    };
 }
 #endif
