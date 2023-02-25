@@ -5,14 +5,15 @@
 #include <unistd.h>
 #include "../inc/parseConfig.hpp"
 #include <sys/select.h>
+#include "../inc/parseRequest.hpp"
 
 void startServers(std::vector<parsingConfig::server> servers)
 {
-    int server_fd[30], new_socket, max_sd, sd, activity;
+    int server_fd[30], new_socket, max_sd, sd, activity,valread;
     struct sockaddr_in address;
+    Response res;
     int addrlen = sizeof(address);
-    // char buffer[1024] = {0};
-    std::string hello = "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Length: 12\r\n\r\nHello World!";
+
     fd_set readfds;
 
     for (int i = 0; i < 30; i++)
@@ -73,6 +74,12 @@ void startServers(std::vector<parsingConfig::server> servers)
                 }
                 std::cout << "New connection" << std::endl;
                 std::cout << "Accepted socket: " << new_socket << std::endl;
+                char buffer[1024] = {0};
+                valread = read(new_socket, buffer, 1024);
+                // std::cout << buffer << std::endl;
+                if(valread > 0)
+                    res = handleRequest(buffer, servers[i]);
+                std::string hello = "HTTP/1.1 "+ res.response +"\r\nContent-Length: 12\r\n\r\nHello world!";
                 send(new_socket, hello.c_str(), hello.length(), 0);
                 std::cout << "Hello message sent" << std::endl;
             }
