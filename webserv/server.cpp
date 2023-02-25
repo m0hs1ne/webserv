@@ -39,6 +39,7 @@ int main(int ac, char **av)
     int len = sizeof addr;
     int new_socket;
     Request req;
+    Response res;
     while (true)
     {
         std::cout << "Waiting for connection" << std::endl;
@@ -51,9 +52,8 @@ int main(int ac, char **av)
         std::cout << buffer << std::endl;
         if (vread < 0)
             std::cout << "No Bytes to read" << std::endl;
-        req = parseRequest(buffer);
-        std::cout << req.method << " " << req.path << std::endl;
-        std::string response = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html><head></head><body>Hello World!</body></html>";
+        res = handleRequest(buffer, servers[0]);
+        std::string response = "HTTP/1.1 "+ res.response + "\nContent-Type: text/html\n\n<html><head></head><body>Hello World!</body></html>";
         write(new_socket, response.c_str(), response.length());
         std::cout << "Message sent" << std::endl;
         close(new_socket);

@@ -8,7 +8,6 @@
 #include <string>
 #include <fcntl.h>
 #include <cstdlib>
-static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
 class parsingException : public std::exception
     {
@@ -23,7 +22,7 @@ class parsingException : public std::exception
     };
     size_t countLines(std::string src);
     std::string getLine(std::string src, size_t n);
-    std::vector<std::string> split(std::string str, char c);
+    std::vector<std::string> split(std::string str, char c, int stop);
     bool isMethodValid(const std::string &method);
     size_t sToI(const std::string &str);
 #endif

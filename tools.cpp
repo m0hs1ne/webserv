@@ -1,5 +1,7 @@
 #include "inc/tools.hpp"
 
+static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
+
 size_t countLines(std::string src)
 {
     size_t i = 0;
@@ -35,7 +37,7 @@ std::string getLine(std::string src, size_t n)
     return (std::string(src, i, j));
 }
 
-std::vector<std::string> split(std::string str, char c)
+std::vector<std::string> split(std::string str, char c, int stop)
 {
     std::vector<std::string> res;
     size_t i = 0;
@@ -52,7 +54,8 @@ std::vector<std::string> split(std::string str, char c)
                 res.push_back(std::string(str, j, i - j));
                 j = i + 1;
             }
-            break;
+            if (stop)
+                break;
         }
         ++i;
     }
