@@ -6,7 +6,7 @@
 
 typedef struct parsingConfig::server server;
 Request &fillRequest(const std::string &buffer);
-std::string &createResponse(Request &req,  server &Server);
+Response &createResponse(Request &req,  server &Server);
 
 Response &handleRequest(const std::string &buffer, server &Server)
 {
@@ -14,7 +14,7 @@ Response &handleRequest(const std::string &buffer, server &Server)
     Response *res = new Response;
 
     req = fillRequest(buffer);
-    res->response = createResponse(req, Server);
+    *res = createResponse(req, Server);
     return *res;
 }
 
@@ -37,51 +37,59 @@ std::map<int, std::string>& initHttpCode()
     return (*code);
 }
 
-void addHttpCode(Request &req, std::string &Response)
+void addHttpCode(Request &req, Response &resp)
 {
-    std::map<int, std::string> code;
-    code = initHttpCode();
+    std::map<int, std::string> codeMap;
+    int code;
+    codeMap = initHttpCode();
     if (req.pathFound)
-        Response += code[200];
+        code = 200;
     else
-        Response += code[404];
+        code = 404;
+    resp.code = code;
+    resp.response += codeMap[code];
 }
 
-void findPath(Request &req,  server &Server)
+void findPath(Request &req, server &server)
 {
-    req.fullPath = Server.root + req.path;
+    req.fullPath = server.root + req.path;
     if (!access(req.fullPath.c_str(), F_OK))
-    {
-        std::cout << "--------> " << req.fullPath << " <-------------" << std::endl;
         req.pathFound = true;
+}
+
+void findErrorPage(Request &req, Response &resp, server &server)
+{
+    if (resp.code != 200 && !server.error_pages[resp.code].empty())
+    {
+        req.pathFound = true;
+        req.fullPath = server.error_pages[resp.code];
     }
 }
 
-void addFileContent(Request &req, std::string &res)
+void addFileContent(Request &req, Response &res)
 {
     std::string fileContent;
 
     if (req.pathFound)
     {
         fileContent = readFile(req.fullPath);
-        res += "\nContent-length: " + itos(fileContent.size());
-        res += "\n\r\n\r\n" + fileContent + "\n";
-        std::cout << "=========== " << res << std::endl;
+        res.response += "\nContent-length: " + itos(fileContent.size());
+        res.response += "\n\r\n" + fileContent + "\n";
     }
     else
-        res += "\nContent-length: 0\n\r\n\r\n";
+        res.response += "\nContent-length: 0\n";
+    std::cout << res.response << std::endl;
 }
 
-std::string &createResponse(Request &req,  server &Server)
+Response &createResponse(Request &req,  server &Server)
 {
-    std::string *Response = new std::string;
+    Response *resp = new Response;
 
     findPath(req, Server);
-    addHttpCode(req, *Response);
-    addFileContent(req, *Response);
-    std::cout << "========" << std::endl;
-    std::cout << *Response << std::endl;
-    return *Response;
+    addHttpCode(req, *resp);
+    findErrorPage(req, *resp, Server);
+    addFileContent(req, *resp);
+    return *resp;
 }
 
 Request &fillRequest(const std::string &buffer)

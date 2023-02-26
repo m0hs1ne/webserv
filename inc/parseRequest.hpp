@@ -17,6 +17,7 @@ typedef struct Request
 
 typedef struct Response
 {
+    int code;
     std::string response;
 } Response;
 
