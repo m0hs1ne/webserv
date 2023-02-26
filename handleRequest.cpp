@@ -69,7 +69,7 @@ void addFileContent(Request &req, std::string &res)
         std::cout << "=========== " << res << std::endl;
     }
     else
-        res += "\nContent-length: 1\n\r\n\r\n";
+        res += "\nContent-length: 0\n\r\n\r\n";
 }
 
 std::string &createResponse(Request &req,  server &Server)
