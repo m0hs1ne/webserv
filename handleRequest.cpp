@@ -49,21 +49,23 @@ void addHttpCode(Request &req, std::string &Response)
 
 void findPath(Request &req,  server &Server)
 {
-    std::string fullPath;
-
     req.fullPath = Server.root + req.path;
-    if (!access(fullPath.c_str(), F_OK))
+    if (!access(req.fullPath.c_str(), F_OK))
+    {
+        std::cout << "--------> " << req.fullPath << " <-------------" << std::endl;
         req.pathFound = true;
+    }
 }
 
 void addFileContent(Request &req, std::string &res)
 {
     std::string fileContent;
+
     if (req.pathFound)
     {
         fileContent = readFile(req.fullPath);
         res += "\nContent-length: " + itos(fileContent.size());
-        res += "\n\r\n\r\n" + fileContent;
+        res += "\n\r\n\r\n" + fileContent + "\n";
         std::cout << "=========== " << res << std::endl;
     }
     else
