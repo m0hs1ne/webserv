@@ -20,9 +20,11 @@ class parsingException : public std::exception
             return msg.c_str();
         }
     };
+    std::string readFile(const std::string &file);
     size_t countLines(std::string src);
     std::string getLine(std::string src, size_t n);
     std::vector<std::string> split(std::string str, char c, int stop);
     bool isMethodValid(const std::string &method);
     size_t sToI(const std::string &str);
+    std::string itos(size_t n);
 #endif

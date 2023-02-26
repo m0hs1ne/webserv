@@ -79,7 +79,7 @@ void startServers(std::vector<parsingConfig::server> servers)
                 // std::cout << buffer << std::endl;
                 if(valread > 0)
                     res = handleRequest(buffer, servers[i]);
-                std::string hello = "HTTP/1.1 "+ res.response +"\r\nContent-Length: 12\r\n\r\nHello world!";
+                std::string hello = "HTTP/1.1 "+ res.response;
                 send(new_socket, hello.c_str(), hello.length(), 0);
                 std::cout << "Hello message sent" << std::endl;
             }

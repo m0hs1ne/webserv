@@ -51,9 +51,23 @@ void findPath(Request &req,  server &Server)
 {
     std::string fullPath;
 
-    fullPath = Server.root + req.path;
+    req.fullPath = Server.root + req.path;
     if (!access(fullPath.c_str(), F_OK))
         req.pathFound = true;
+}
+
+void addFileContent(Request &req, std::string &res)
+{
+    std::string fileContent;
+    if (req.pathFound)
+    {
+        fileContent = readFile(req.fullPath);
+        res += "\nContent-length: " + itos(fileContent.size());
+        res += "\n\r\n\r\n" + fileContent;
+        std::cout << "=========== " << res << std::endl;
+    }
+    else
+        res += "\nContent-length: 1\n\r\n\r\n";
 }
 
 std::string &createResponse(Request &req,  server &Server)
@@ -62,6 +76,9 @@ std::string &createResponse(Request &req,  server &Server)
 
     findPath(req, Server);
     addHttpCode(req, *Response);
+    addFileContent(req, *Response);
+    std::cout << "========" << std::endl;
+    std::cout << *Response << std::endl;
     return *Response;
 }
 

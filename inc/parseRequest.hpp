@@ -11,6 +11,7 @@ typedef struct Request
     std::string method;
     std::string path;
     bool pathFound;
+    std::string fullPath;
     std::map<std::string, std::string> other;
 } Request;
 

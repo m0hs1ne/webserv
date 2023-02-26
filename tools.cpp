@@ -15,6 +15,25 @@ size_t countLines(std::string src)
     return lines;
 }
 
+std::string readFile(const std::string &file)
+{
+    std::ifstream ifs(file);
+    if (!ifs)
+        throw parsingException("Error opening file");
+    std::stringstream buffer;
+    buffer << ifs.rdbuf();
+    return buffer.str();
+}
+
+std::string itos(size_t n)
+{
+    std::istringstream convert(n);
+    std::string res;
+
+    convert >> res;
+    return res;
+}
+
 std::string getLine(std::string src, size_t n)
 {
     size_t i = 0;
