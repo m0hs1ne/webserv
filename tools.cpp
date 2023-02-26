@@ -27,10 +27,10 @@ std::string readFile(const std::string &file)
 
 std::string itos(size_t n)
 {
-    std::istringstream convert(n);
+    std::stringstream convert;
     std::string res;
-
-    convert >> res;
+    convert << n;
+    res = convert.str();
     return res;
 }
 
