@@ -7,6 +7,7 @@
 typedef struct parsingConfig::server server;
 Request &fillRequest(const std::string &buffer);
 Response &createResponse(Request &req,  server &Server);
+std::map<int, std::string> code;
 
 Response &handleRequest(const std::string &buffer, server &Server)
 {
@@ -20,21 +21,20 @@ Response &handleRequest(const std::string &buffer, server &Server)
 
 std::map<int, std::string>& initHttpCode()
 {
-    std::map<int, std::string> *code = new std::map<int, std::string>;
-    (*code)[501] = "501 Not Implemented";
-    (*code)[500] = "500 Internal Server Error";
-    (*code)[414] = "414 Request-URI Too Long";
-    (*code)[413] = "413 Request Entity Too Large";
-    (*code)[409] = "409 Conflict";
-    (*code)[405] = "405 Method Not Allowed";
-    (*code)[404] = "404 Not Found";
-    (*code)[403] = "403 Forbidden";
-    (*code)[400] = "400 Bad Request";
-    (*code)[301] = "301 Moved Permanently";
-    (*code)[204] = "204 No Content";
-    (*code)[201] = "201 Created";
-    (*code)[200] = "200 OK";
-    return (*code);
+    code[501] = "501 Not Implemented";
+    code[500] = "500 Internal Server Error";
+    code[414] = "414 Request-URI Too Long";
+    code[413] = "413 Request Entity Too Large";
+    code[409] = "409 Conflict";
+    code[405] = "405 Method Not Allowed";
+    code[404] = "404 Not Found";
+    code[403] = "403 Forbidden";
+    code[400] = "400 Bad Request";
+    code[301] = "301 Moved Permanently";
+    code[204] = "204 No Content";
+    code[201] = "201 Created";
+    code[200] = "200 OK";
+    return (code);
 }
 
 void addHttpCode(Request &req, Response &resp)
@@ -53,6 +53,7 @@ void addHttpCode(Request &req, Response &resp)
 void findPath(Request &req, server &server)
 {
     req.fullPath = server.root + req.path;
+    std::cout << req.fullPath << std::endl;
     if (!access(req.fullPath.c_str(), F_OK))
         req.pathFound = true;
 }
@@ -63,6 +64,14 @@ void findErrorPage(Request &req, Response &resp, server &server)
     {
         req.pathFound = true;
         req.fullPath = server.error_pages[resp.code];
+        if (access(req.fullPath.c_str(), F_OK))
+            req.fullPath = "./error_pages/404.html";
+    }
+    else if (resp.code != 200)
+    {
+        req.pathFound = false;
+        resp.response += "\nContent-length: " + itos(code[resp.code].size());
+        resp.response += "\n\r\n" + code[resp.code] + "\n";
     }
 }
 
@@ -76,8 +85,6 @@ void addFileContent(Request &req, Response &res)
         res.response += "\nContent-length: " + itos(fileContent.size());
         res.response += "\n\r\n" + fileContent + "\n";
     }
-    else
-        res.response += "\nContent-length: 0\n";
     std::cout << res.response << std::endl;
 }
 

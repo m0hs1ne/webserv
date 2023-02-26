@@ -18,6 +18,7 @@ size_t countLines(std::string src)
 std::string readFile(const std::string &file)
 {
     std::ifstream ifs(file);
+    std::cout<< "-----" << file << std::endl;
     if (!ifs)
         throw parsingException("Error opening file");
     std::stringstream buffer;
