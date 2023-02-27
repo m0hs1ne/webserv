@@ -11,6 +11,7 @@ void startServers(std::vector<parsingConfig::server> servers)
 {
     int server_fd[30], new_socket, max_sd, sd, activity,valread;
     struct sockaddr_in address;
+    int opt = 1;
     Response res;
     int addrlen = sizeof(address);
 
@@ -24,6 +25,12 @@ void startServers(std::vector<parsingConfig::server> servers)
         if ((server_fd[i] = socket(AF_INET, SOCK_STREAM, 0)) == 0)
         {
             perror("socket failed");
+            exit(EXIT_FAILURE);
+        }
+
+        if (setsockopt(server_fd[i], SOL_SOCKET, SO_REUSEADDR , &opt, sizeof(opt)))
+        {
+            perror("setsockopt");
             exit(EXIT_FAILURE);
         }
 
