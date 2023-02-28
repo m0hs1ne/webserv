@@ -1,6 +1,7 @@
 #include "../includes/handlingRequest.hpp"
 
 std::map<int, std::string> code;
+std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!*'():;%@+$,/?#[]";
 
 void initHttpCode()
 {
@@ -22,7 +23,7 @@ void initHttpCode()
     }
 }
 
-Response &handleRequest(const std::string &buffer, Server &server)
+Response &handleRequest(std::string buffer, Server &server)
 {
     Request request;
     Response *response = new Response();
@@ -53,7 +54,7 @@ Request &fillRequest(const std::string &buffer)
     for (int i = 1; !line.empty(); i++)
     {
         splitArr = split(line, ':', 1);
-        req->attr[splitArr[0]= splitArr[1];
+        req->attr[splitArr[0]] = splitArr[1];
         line = getLine(buffer, i);
     }
     return *req;
@@ -61,14 +62,23 @@ Request &fillRequest(const std::string &buffer)
 
 bool isRequestWellFormed(Request request, Response &response, Server &server)
 {
-    if (request.attr["Transfer-Encoding"] != "chunked")
+    if (request.attr.find("Transfer-Encoding") != request.attr.end() && request.attr["Transfer-Encoding"] != "chunked")
         response.code = 501;
-    else if (request.attr.find("Transfer-Encoding") == request.attr.end() &&\
-                request.attr.find("Content-Length") == request.attr.end() &&\
-                request.method == "POST")
+    else if (request.attr.find("Transfer-Encoding") == request.attr.end() &&
+             request.attr.find("Content-Length") == request.attr.end() &&
+             request.method == "POST")
         response.code = 400;
-    else if (request.size > 2048)
+    else if (request.path.size() > 2048)
         response.code = 414;
+    else if (!request.path.empty())
+    {
+        for (size_t i = 0; i < request.path.size(); i++)
+        {
+            if (allowedChar.find(request.path[i]) == std::string::npos)
+                response.code = 400;
+        }
+    }
+    // we need to check if the request body size is bigger than the client_max_body_size
     else if (request.size > server.client_max_body_size)
         response.code = 413;
     return (response.code == 200);
@@ -76,7 +86,8 @@ bool isRequestWellFormed(Request request, Response &response, Server &server)
 
 void formResponse(Response &response)
 {
-    (void)response;
+    response.response = code[response.code] + "\r\n";
+    std::cout << response.response << std::endl;
 }
 
 bool matchLocation(Request request, Response &response, Server &server)
@@ -84,7 +95,7 @@ bool matchLocation(Request request, Response &response, Server &server)
     int pos;
     size_t i;
 
-    for (i = 0;  i < server.locations.size(); i++)
+    for (i = 0; i < server.locations.size(); i++)
     {
         pos = request.path.find(server.locations[i].name);
         if (pos == 1)
@@ -113,11 +124,11 @@ bool matchLocation(Request request, Response &response, Server &server)
 
 bool methodAllowed(Request request, Response &response, Server &server)
 {
-    std::vector<std::string>::iterator it  = server.locations[response.location].methods.begin();
+    std::vector<std::string>::iterator it = server.locations[response.location].methods.begin();
 
     for (; it != server.locations[response.location].methods.end(); it++)
     {
-        if(toUpper(*it) == toUpper(request.method))
+        if (toUpper(*it) == toUpper(request.method))
             return true;
     }
     return false;

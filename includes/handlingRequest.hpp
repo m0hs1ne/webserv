@@ -12,7 +12,7 @@
 
 typedef struct parsingConfig::server Server;
 
-Response &handleRequest(const std::string &buffer, Server &server);
+Response &handleRequest(std::string buffer, Server &server);
 Request &fillRequest(const std::string &buffer);
 bool isRequestWellFormed(Request request, Response &response, Server &server);
 void formResponse(Response &response);

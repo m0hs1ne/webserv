@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/select.h>
 #include "includes/handlingRequest.hpp"
+#define MAX 3000
 
 void startServers(std::vector<parsingConfig::server> servers)
 {
@@ -78,13 +79,13 @@ void startServers(std::vector<parsingConfig::server> servers)
                 }
                 std::cout << "New connection" << std::endl;
                 std::cout << "Accepted socket: " << new_socket << std::endl;
-                char buffer[1024] = {0};
-                valread = read(new_socket, buffer, 1024);
-                std::cout << buffer << std::endl;
+                char buffer[MAX] = {0};
+                valread = read(new_socket, buffer, MAX -1);
+                // std::cout << buffer << std::endl;
                 if(valread > 0)
                     res = handleRequest(buffer, servers[i]);
                 std::string hello = "HTTP/1.1 "+ res.response;
-                // std::string hello = "HTTP/1.1 200 OK\r";
+                // std::string hello = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello world!";
                 send(new_socket, hello.c_str(), hello.length(), 0);
                 std::cout << "Hello message sent" << std::endl;
             }
