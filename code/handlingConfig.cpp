@@ -256,6 +256,15 @@ void parsingConfig::parseLocProp(const std::string &src, size_t n, location &l)
             throw parsingException("Invalid client_max_body_size param");
         
     }
+    if(line[0] == locProp[9])
+    {
+        if(line.size() != 3)
+            throw parsingException("Invalid redirect param");
+        if(line[1] == "301")
+            l.return_pages = line[2];
+        else
+            throw parsingException("Invalid redirect param");
+    }
 }
 
 parsingConfig::location parsingConfig::parseLocation(const std::string &src, size_t lineS, size_t lineE)

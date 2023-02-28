@@ -11,7 +11,7 @@
 #include <cstdlib>
 
 static const char *serverProp[] = {"listen", "server_name", "error_page", "root", nullptr};
-static const char *locProp[] = {"method", "root", "autoindex", "index", "cgi_extension", "cgi_path", "upload_enable", "upload_path", "client_max_body_size", nullptr};
+static const char *locProp[] = {"method", "root", "autoindex", "index", "cgi_extension", "cgi_path", "upload_enable", "upload_path", "client_max_body_size","return", nullptr};
 static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
 class parsingConfig
@@ -26,6 +26,7 @@ public:
         bool autoindex;
         std::string index;
         std::vector<std::string> cgi_extension;
+        std::string return_pages;
         std::string cgi_path;
         bool upload_enable;
         std::string upload_path;
