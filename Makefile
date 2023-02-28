@@ -18,7 +18,7 @@ CYAN		=	\033[0;96m
 WHITE		=	\033[0;97m
 
 
-SRC = webserv.cpp code/handlingConfig.cpp code/tools.cpp
+SRC = webserv.cpp code/handlingConfig.cpp code/handlingRequest.cpp code/tools.cpp class/Response.cpp class/Request.cpp
 
 all:		$(NAME)
 

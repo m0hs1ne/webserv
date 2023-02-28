@@ -12,7 +12,7 @@ public:
     bool pathFound;
     std::string fullPath;
     std::map<std::string, std::string> attr;
-    int size;
+    size_t size;
 
     Request();
     Request(const Request& other);

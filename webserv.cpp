@@ -10,7 +10,7 @@ void startServers(std::vector<parsingConfig::server> servers)
 {
     int server_fd[30], new_socket, max_sd, sd, activity,valread;
     struct sockaddr_in address;
-    // Response res;
+    Response res;
     int addrlen = sizeof(address);
 
     fd_set readfds;
@@ -80,11 +80,11 @@ void startServers(std::vector<parsingConfig::server> servers)
                 std::cout << "Accepted socket: " << new_socket << std::endl;
                 char buffer[1024] = {0};
                 valread = read(new_socket, buffer, 1024);
-                // std::cout << buffer << std::endl;
-                // if(valread > 0)
-                //     res = handleRequest(buffer, servers[i]);
-                // std::string hello = "HTTP/1.1 "+ res.response;
-                std::string hello = "HTTP/1.1 200 OK\r";
+                std::cout << buffer << std::endl;
+                if(valread > 0)
+                    res = handleRequest(buffer, servers[i]);
+                std::string hello = "HTTP/1.1 "+ res.response;
+                // std::string hello = "HTTP/1.1 200 OK\r";
                 send(new_socket, hello.c_str(), hello.length(), 0);
                 std::cout << "Hello message sent" << std::endl;
             }

@@ -96,3 +96,12 @@ bool isMethodValid(const std::string &method)
     }
     return false;
 }
+
+std::string toUpper(std::string str)
+{
+    for(size_t i = 0; i < str.size(); i++)
+    {
+        str[i] = std::toupper(str[i]);
+    }
+    return str;
+}
