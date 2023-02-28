@@ -5,7 +5,8 @@
 class Response
 {
     public:
-        int code;
+        int         code;
+        int         location;
         std::string codeMessage;
         std::string returnFile;
         std::string response;

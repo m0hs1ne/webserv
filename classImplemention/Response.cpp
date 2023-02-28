@@ -16,6 +16,7 @@ Response& Response::operator=(const Response& other)
     this->codeMessage = other.codeMessage;
     this->response = other.response;
     this->returnFile = other.returnFile;
+    this->location = other.location;
 }
 
 Response::~Response(){}
