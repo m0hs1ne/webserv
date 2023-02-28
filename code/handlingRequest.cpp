@@ -95,5 +95,6 @@ bool matchLocation(Request request, Response &response, Server &server)
         response.code == 301;
         response.returnFile = server.locations[i].index;
     }
+    response.location = i;
     return true;
 }
