@@ -10,6 +10,10 @@ class Response
         std::string codeMessage;
         std::string returnFile;
         std::string response;
+        std::string root;
+        std::string fullPath;
+        std::string body;
+        std::string type;
 
         Response();
         Response(const Response& other);
