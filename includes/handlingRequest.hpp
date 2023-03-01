@@ -19,6 +19,6 @@ bool isRequestWellFormed(Request request, Response &response, Server &server);
 void formResponse(Response &response, Server& server);
 bool matchLocation(Request request, Response &response, Server &server);
 bool methodAllowed(Request request, Response &response, Server &server);
-void checkRedirection(Response &response, Server &server);
+void checkRedirection(Response &response, Server &server,Request request);
 void checkPathFound(Request request, Response &response, Server &server);
 #endif

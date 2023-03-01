@@ -102,7 +102,7 @@ bool matchLocation(Request request, Response &response, Server &server)
     std::cout << request.path << "     " << server.locations[i].name << std::endl;
     response.location = i;
     checkPathFound(request, response, server);
-    checkRedirection(response, server);
+    checkRedirection(response, server, request);
     return true;
 }
 
@@ -113,15 +113,16 @@ void checkPathFound(Request request, Response &response, Server &server)
     else 
         response.root = server.root;
     response.fullPath = response.root + request.path;
+    std::cout << response.fullPath << std::endl;    
     if (!access(response.fullPath.c_str(), R_OK))
         response.returnFile = response.fullPath;
     else
         response.code = 404;
 }
 
-void checkRedirection(Response &response, Server &server)
+void checkRedirection(Response &response, Server &server,Request request)
 {
-    if (!server.locations[response.location].index.empty())
+    if (!server.locations[response.location].index.empty() && request.path == server.locations[response.location].name)
     {
         response.code = 200;
         response.returnFile = server.locations[response.location].index;
@@ -149,7 +150,7 @@ void formResponse(Response &response, Server &server)
 {
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
-    if (response.returnFile.empty())
+    if (response.returnFile.empty() || access(response.returnFile.c_str(), R_OK))
         response.body = code[response.code];
     else
         response.body = readFile(response.returnFile);
