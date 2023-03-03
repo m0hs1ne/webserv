@@ -113,8 +113,7 @@ void checkPathFound(Request request, Response &response, Server &server)
     else 
         response.root = server.root;
     response.fullPath = response.root + request.path;
-    std::cout << response.fullPath << std::endl;    
-    if (!access(response.fullPath.c_str(), R_OK))
+    if (response.fullPath[response.fullPath.size() - 1] != '/' && !access(response.fullPath.c_str(), R_OK))
         response.returnFile = response.fullPath;
     else
         response.code = 404;
@@ -122,15 +121,15 @@ void checkPathFound(Request request, Response &response, Server &server)
 
 void checkRedirection(Response &response, Server &server,Request request)
 {
-    if (!server.locations[response.location].index.empty() && request.path == server.locations[response.location].name)
-    {
-        response.code = 200;
-        response.returnFile = server.locations[response.location].index;
-    }
-    else if (!server.locations[response.location].return_pages.empty())
+    if (!server.locations[response.location].return_pages.empty())
     {
         response.code = 301;
         response.returnFile = server.locations[response.location].return_pages;
+    }
+    else if (!server.locations[response.location].index.empty() && request.path == server.locations[response.location].name)
+    {
+        response.code = 200;
+        response.returnFile = server.locations[response.location].index;
     }
 }
 
