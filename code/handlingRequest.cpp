@@ -31,11 +31,11 @@ Response &handleRequest(std::string buffer, Server &server)
 
     initHttpCode();
     request = fillRequest(buffer);
-    if (isRequestWellFormed(request, *response, server) &&\
-        matchLocation(request, *response, server) &&\
+    if (isRequestWellFormed(request, *response, server) &&
+        matchLocation(request, *response, server) &&
         methodAllowed(request, *response, server))
-        if (request.method == "GET")
-            handlingGet(request, *response, server);
+    if (request.method == "GET")
+        handlingGet(request, *response, server);
     formResponse(*response, server);
     return *response;
 }
@@ -113,7 +113,7 @@ void checkPathFound(Request request, Response &response, Server &server)
 {
     if (!server.locations[response.location].root.empty())
         response.root = server.locations[response.location].root;
-    else 
+    else
         response.root = server.root;
     response.fullPath = response.root + request.path;
     if (response.fullPath[response.fullPath.size() - 1] != '/' && !access(response.fullPath.c_str(), R_OK))
@@ -122,7 +122,7 @@ void checkPathFound(Request request, Response &response, Server &server)
         response.code = 404;
 }
 
-void checkRedirection(Response &response, Server &server,Request request)
+void checkRedirection(Response &response, Server &server, Request request)
 {
     if (!server.locations[response.location].return_pages.empty())
     {
@@ -152,15 +152,22 @@ void formResponse(Response &response, Server &server)
 {
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
-    if (response.returnFile.empty() || access(response.returnFile.c_str(), R_OK))
+    if ( response.body.empty() &&\
+         response.redirect.empty() &&\
+        (response.returnFile.empty() || access(response.returnFile.c_str(), R_OK)))
         response.body = code[response.code];
-    else
+    else if(response.body.empty() && !response.returnFile.empty())
         response.body = readFile(response.returnFile);
     response.response = "HTTP/1.1 ";
     response.response += code[response.code] + "\r\n";
-    response.response += "Server: " + server.names[0] +"\r\n";
-    response.response += "Content-Type: text/html\r\n";
-    response.response += "Content-length: " + itos(response.body.size()) + "\r\n";
-    response.response += "\r\n";
-    response.response += response.body + "\r\n";
+    response.response += "Server: " + server.names[0] + "\r\n";
+    if (response.redirect.empty())
+    {
+        response.response += "Content-Type: text/html\r\n";
+        response.response += "Content-length: " + itos(response.body.size()) + "\r\n";
+        response.response += "\r\n";
+        response.response += response.body + "\r\n";
+    }
+    else
+        response.response += "Location: " + response.redirect + "\r\n";
 }

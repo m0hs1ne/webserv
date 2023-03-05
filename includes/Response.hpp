@@ -14,6 +14,7 @@ class Response
         std::string fullPath;
         std::string body;
         std::string type;
+        std::string redirect;
 
         Response();
         Response(const Response& other);

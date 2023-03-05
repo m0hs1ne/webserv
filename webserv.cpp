@@ -73,16 +73,13 @@ void startServers(std::vector<parsingConfig::server> servers)
             std::cout << "Timeout" << std::endl;
             continue;
         }
-        std::cout << "Activity " << activity << std::endl;
         for (size_t i = 0; i < servers.size(); i++)
         {
-            std::cout << "server " << i << std::endl;
             sd = server_fd[i];
             if (FD_ISSET(sd, &readfds))
             {
                 if (sd == server_fd[i])
                 {
-                    std::cout << "socket " << sd << std::endl;
                     if ((new_socket = accept(sd, (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
                     {
                         perror("accept");
@@ -91,11 +88,6 @@ void startServers(std::vector<parsingConfig::server> servers)
                     fcntl(new_socket, F_SETFL, O_NONBLOCK);
                     FD_SET(new_socket, &readfds);
                 }
-                for (int i = 0; i < 30; i++)
-                {
-                    if (FD_ISSET(i, &readfds))
-                        std::cout << "fd " << i << std::endl;
-                }
                 if (FD_ISSET(new_socket, &readfds))
                 {
                     std::cout << "New connection" << std::endl;
@@ -103,7 +95,6 @@ void startServers(std::vector<parsingConfig::server> servers)
                     char buffer[MAX] = {0};
                     valread = read(new_socket, buffer, MAX - 1);
                     // std::cout << buffer << std::endl;
-                    std::cout << "valread: " << valread << std::endl;
                     if (valread <= 0)
                     {
                         close(new_socket);

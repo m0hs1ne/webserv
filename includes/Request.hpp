@@ -10,7 +10,6 @@ public:
     std::string method;
     std::string path;
     bool pathFound;
-    std::string fullPath;
     std::map<std::string, std::string> attr;
     size_t size;
 
