@@ -1,4 +1,5 @@
 #include "../includes/handlingRequest.hpp"
+#include "../includes/handlingGet.hpp"
 
 std::map<int, std::string> code;
 std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!*'():;%@+$,/?#[]";
@@ -31,8 +32,10 @@ Response &handleRequest(std::string buffer, Server &server)
     initHttpCode();
     request = fillRequest(buffer);
     if (isRequestWellFormed(request, *response, server) &&\
-        matchLocation(request, *response, server))
-        methodAllowed(request, *response, server);        
+        matchLocation(request, *response, server) &&\
+        methodAllowed(request, *response, server))
+        if (request.method == "GET")
+            handlingGet(request, *response, server);
     formResponse(*response, server);
     return *response;
 }
@@ -60,7 +63,7 @@ Request &fillRequest(const std::string &buffer)
 
 bool isRequestWellFormed(Request request, Response &response, Server &server)
 {
-    if (request.attr.find("Transfer-Encoding") != request.attr.end() && request.attr["Transfer-Encoding"] != "chunked")
+    if (request.attr.find("Transfer-Encoding") != request.attr.end() && request.attr["Transfer-Encoding"] != " chunked")
         response.code = 501;
     else if (request.attr.find("Transfer-Encoding") == request.attr.end() &&
              request.attr.find("Content-Length") == request.attr.end() &&
@@ -155,7 +158,7 @@ void formResponse(Response &response, Server &server)
         response.body = readFile(response.returnFile);
     response.response = "HTTP/1.1 ";
     response.response += code[response.code] + "\r\n";
-    response.response += "Server: Webserv\r\n";
+    response.response += "Server: " + server.names[0] +"\r\n";
     response.response += "Content-Type: text/html\r\n";
     response.response += "Content-length: " + itos(response.body.size()) + "\r\n";
     response.response += "\r\n";

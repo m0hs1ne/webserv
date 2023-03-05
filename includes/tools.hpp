@@ -8,6 +8,8 @@
 #include <string>
 #include <fcntl.h>
 #include <cstdlib>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 class parsingException : public std::exception
 {
@@ -29,4 +31,5 @@ bool isMethodValid(const std::string &method);
 size_t sToI(const std::string &str);
 std::string itos(size_t n);
 std::string toUpper(std::string str);
+int isDir(const char *pathname);
 #endif

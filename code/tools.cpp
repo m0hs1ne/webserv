@@ -105,3 +105,14 @@ std::string toUpper(std::string str)
     }
     return str;
 }
+
+int isDir(const char *pathname)
+{
+    struct stat info;
+    if (stat(pathname, &info) != 0)
+        return 1;
+    else if (info.st_mode & S_IFDIR)
+        return -1;
+    else
+        return 0;
+}
