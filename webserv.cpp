@@ -26,8 +26,8 @@ void startServers(std::vector<parsingConfig::server> servers)
             perror("socket failed");
             exit(EXIT_FAILURE);
         }
-        fcntl(server_fd[i], F_SETFL, O_NONBLOCK);
-        if (setsockopt(server_fd[i], SOL_SOCKET, SO_REUSEADDR, &valread, sizeof(valread)))
+        // fcntl(server_fd[i], F_SETFL, O_NONBLOCK);
+        if (setsockopt(server_fd[i], SOL_SOCKET, SO_REUSEPORT, &valread, sizeof(valread)))
         {
             perror("setsockopt");
             exit(EXIT_FAILURE);
@@ -85,7 +85,7 @@ void startServers(std::vector<parsingConfig::server> servers)
                         perror("accept");
                         exit(EXIT_FAILURE);
                     }
-                    fcntl(new_socket, F_SETFL, O_NONBLOCK);
+                    // fcntl(new_socket, F_SETFL, O_NONBLOCK);
                     FD_SET(new_socket, &readfds);
                 }
                 if (FD_ISSET(new_socket, &readfds))
@@ -94,6 +94,7 @@ void startServers(std::vector<parsingConfig::server> servers)
                     std::cout << "Accepted socket: " << new_socket << std::endl;
                     char buffer[MAX] = {0};
                     valread = read(new_socket, buffer, MAX - 1);
+                    std::cout << "valread: " << valread << std::endl;
                     // std::cout << buffer << std::endl;
                     if (valread <= 0)
                     {
@@ -105,8 +106,8 @@ void startServers(std::vector<parsingConfig::server> servers)
                     {
                         res = handleRequest(buffer, servers[i]);
                         std::string hello = res.response;
-                        // std::string hello = "HTTP/1.1 200 OK\r\nContent-Length: 12\r\n\r\nHello world!";
-                        send(new_socket, hello.c_str(), hello.length(), 0);
+                        int i = send(new_socket, hello.c_str(), hello.length(), 0);
+                        std::cout << "i have sent : " << i << std::endl;
                         std::cout << "Hello message sent" << std::endl;
                         close(new_socket);
                         FD_CLR(new_socket, &readfds);

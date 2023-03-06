@@ -48,6 +48,8 @@ std::string AutoIndex::getPage(const char *path, std::string reqPath, std::strin
 
 std::string AutoIndex::getLink(std::string dirEntry, std::string dirName, std::string host, int port)
 {
+    if (dirEntry == ".")
+        return "";
 
     std::stringstream ss;
     ss << "\t\t<p><a href=\"http://" + host + ":" << port << dirName + dirEntry + "\">" + dirEntry + "</a></p>\n";

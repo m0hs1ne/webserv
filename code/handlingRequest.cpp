@@ -24,6 +24,56 @@ void initHttpCode()
     }
 }
 
+std::string setContentType(std::string path)
+{
+    std::string type;
+
+    if (path.empty())
+    {
+        type = "text/html";
+        return type;
+    }
+
+    std::string ext = path.substr(path.find_last_of(".") + 1);
+    if (ext == "html")
+        type = "text/html";
+    else if (ext == "jpg" || ext == "jpeg")
+        type = "image/jpeg";
+    else if (ext == "png")
+        type = "image/png";
+    else if (ext == "gif")
+        type = "image/gif";
+    else if (ext == "css")
+        type = "text/css";
+    else if (ext == "js")
+        type = "application/javascript";
+    else if (ext == "json")
+        type = "application/json";
+    else if (ext == "txt")
+        type = "text/plain";
+    else if (ext == "xml")
+        type = "text/xml";
+    else if (ext == "pdf")
+        type = "application/pdf";
+    else if (ext == "zip")
+        type = "application/zip";
+    else if (ext == "gz")
+        type = "application/gzip";
+    else if (ext == "mp3")
+        type = "audio/mpeg";
+    else if (ext == "mp4")
+        type = "video/mp4";
+    else if (ext == "avi")
+        type = "video/x-msvideo";
+    else if (ext == "svg")
+        type = "image/svg+xml";
+    else if (ext == "ico")
+        type = "image/x-icon";
+    else
+        type = "text/plain";
+    return type;
+}
+
 Response &handleRequest(std::string buffer, Server &server)
 {
     Request request;
@@ -34,8 +84,8 @@ Response &handleRequest(std::string buffer, Server &server)
     if (isRequestWellFormed(request, *response, server) &&
         matchLocation(request, *response, server) &&
         methodAllowed(request, *response, server))
-    if (request.method == "GET")
-        handlingGet(request, *response, server);
+        if (request.method == "GET")
+            handlingGet(request, *response, server);
     formResponse(*response, server);
     return *response;
 }
@@ -152,21 +202,25 @@ void formResponse(Response &response, Server &server)
 {
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
-    if ( response.body.empty() &&\
-         response.redirect.empty() &&\
+    std::string type = setContentType(response.returnFile);
+    if (response.body.empty() &&
+        response.redirect.empty() &&
         (response.returnFile.empty() || access(response.returnFile.c_str(), R_OK)))
         response.body = code[response.code];
-    else if(response.body.empty() && !response.returnFile.empty())
+    else if (response.body.empty() && !response.returnFile.empty())
+    {
         response.body = readFile(response.returnFile);
+    }
     response.response = "HTTP/1.1 ";
     response.response += code[response.code] + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
     if (response.redirect.empty())
     {
-        response.response += "Content-Type: text/html\r\n";
+        response.response += "Connection: close\r\n";
+        response.response += "Content-Type: " + type + "\r\n";
         response.response += "Content-length: " + itos(response.body.size()) + "\r\n";
         response.response += "\r\n";
-        response.response += response.body + "\r\n";
+        response.response += response.body;
     }
     else
         response.response += "Location: " + response.redirect + "\r\n";
