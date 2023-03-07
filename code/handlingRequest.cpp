@@ -101,6 +101,8 @@ Request &fillRequest(const std::string &buffer)
     splitArr = split(line, ' ', 0);
     req->method = splitArr[0];
     req->path = splitArr[1];
+    splitArr = split(req->path, '&', 1);
+    req->query = splitArr[1];
     line = getLine(buffer, 1);
     for (int i = 1; !line.empty(); i++)
     {
