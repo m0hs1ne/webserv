@@ -2,7 +2,7 @@
 #include "../includes/handlingGet.hpp"
 
 std::map<int, std::string> code;
-std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!*'():;%@+$,/?#[]";
+std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=._~!*'():;%@+$,/?#[]";
 
 void initHttpCode()
 {
@@ -100,9 +100,12 @@ Request &fillRequest(const std::string &buffer)
     splitArr = split(line, ' ', 0);
     req->method = splitArr[0];
     req->path = splitArr[1];
-    splitArr = split(req->path, '&', 1);
+    splitArr = split(req->path, '?', 1);
     if (splitArr.size() > 1)
+    {
+        req->path = splitArr[0];
         req->query = splitArr[1];
+    }
     line = getLine(buffer, 1);
     for (int i = 1; !line.empty(); i++)
     {
