@@ -24,6 +24,7 @@ public:
     }
 };
 std::string readFile(const std::string &file);
+std::string dToh(size_t d);
 size_t countLines(std::string src);
 std::string getLine(std::string src, size_t n);
 std::vector<std::string> split(std::string str, char c, int stop);

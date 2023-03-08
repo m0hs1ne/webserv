@@ -15,6 +15,13 @@ size_t countLines(std::string src)
     return lines;
 }
 
+std::string dToh(size_t d)
+{
+    std::stringstream ss;
+    ss << std::hex << d;
+    return ss.str();
+}
+
 std::string readFile(const std::string &file)
 {
     std::ifstream ifs(file);
