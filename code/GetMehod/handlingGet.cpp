@@ -5,6 +5,7 @@
 
 void setEnv(Request request, Server &server)
 {
+    if (!request.query.empty())
     setenv("QUERY_STRING", request.query.c_str(), 1);
     setenv("REQUEST_METHOD", "GET", 1);
     setenv("SERVER_PORT", itos(server.port).c_str(), 1);
@@ -17,7 +18,8 @@ void checkCGI(Request request, Response &response, Server &server)
     int pipefd[2];
     pid_t pid;
     char buffer[2048];
-    char *const args[] = { (char *)cgiPaths.c_str(), (char *)response.fullPath.c_str(), NULL };
+    response.fullPath += server.locations[response.location].index;
+    char *const args[] = { (char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL };
 
     // Create the pipe
     if (pipe(pipefd) == -1) {
@@ -32,6 +34,7 @@ void checkCGI(Request request, Response &response, Server &server)
         return ;
     }
     setEnv(request, server);
+
     if (pid == 0) {
         // Child process - write to pipe
         close(pipefd[0]); // Close the read end of the pipe
@@ -47,14 +50,16 @@ void checkCGI(Request request, Response &response, Server &server)
             std::cerr << "Error executing command\n";
             return ;
         }
+        std::cout << "----- CHILD -----" << std::endl;
     } else {
         // Parent process - read from pipe
         close(pipefd[1]); // Close the write end of the pipe
 
         // Read data from the pipe
-        ssize_t n = read(pipefd[0], buffer, sizeof(buffer) - 1);
-        buffer[n - 1] = '\0';
+        read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
+            std::cout << "--------- < " << args[1] << " > ---------" << std::endl;
         response.body = buffer;
+        close(pipefd[0]);
 
         // Wait for the child process to complete
         wait(NULL);
@@ -63,7 +68,6 @@ void checkCGI(Request request, Response &response, Server &server)
 
 void handleDir(Request request, Response &response, Server &server)
 {
-    (void)(request);
     AutoIndex autoindex;
     if (response.fullPath[response.fullPath.size() - 1] != '/')
     {
@@ -71,11 +75,9 @@ void handleDir(Request request, Response &response, Server &server)
         response.redirect = request.path + "/";
         response.code = 301;
     }
-    // if (!access((response.fullPath + "index.html").c_str(), R_OK) ||\
-    //     !access((response.fullPath + "index.php").c_str(), R_OK))
-    // {
-    //     checkCGI(request, response, server);
-    // }
+    if (!access((response.fullPath + "index.html").c_str(), R_OK) ||\
+        !access((response.fullPath + "index.php").c_str(), R_OK))
+        checkCGI(request, response, server);
     else if(server.locations[response.location].autoindex)
     {
         response.code = 200;
@@ -86,9 +88,7 @@ void handleDir(Request request, Response &response, Server &server)
 void handlingGet(Request request, Response &response, Server &server)
 {
     if (isDir(response.fullPath.c_str()) == -1)
-    {
         handleDir(request, response, server);
-    }
     else if (!isDir(response.fullPath.c_str()))
     {
         // is a file
