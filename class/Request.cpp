@@ -13,6 +13,7 @@ Request& Request::operator=(const Request& other)
     this->pathFound = other.pathFound;
     this->attr = other.attr;
     this->size = other.size;
+    this->query = other.query;
     return *this;
 }
 Request::~Request(){}

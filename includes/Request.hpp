@@ -9,6 +9,7 @@ class Request
 public:
     std::string method;
     std::string path;
+    std::string query;
     bool pathFound;
     std::map<std::string, std::string> attr;
     size_t size;
