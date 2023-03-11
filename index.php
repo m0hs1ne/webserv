@@ -10,7 +10,9 @@
       <li>Item 1</li>
       <li>Item 2</li>
       <li>Item 3</li>
-      <?php echo $_GET["name"]; ?>
+      <?php
+            echo ($_GET['k']);
+            echo "yesyes"; ?>
     </ul>
   </body>
 </html>

@@ -9,6 +9,7 @@ void setEnv(Request request, Server &server)
     {
         std::cout << request.query << std::endl;
         setenv("QUERY_STRING", request.query.c_str(), 1);
+        std::cout << getenv("QUERY_STRING") << std::endl;
     }
     setenv("REQUEST_METHOD", "GET", 1);
     setenv("SERVER_PORT", itos(server.port).c_str(), 1);
@@ -16,7 +17,6 @@ void setEnv(Request request, Server &server)
 
 void checkCGI(Request request, Response &response, Server &server)
 {
-    std::cout << "ENTER" << std::endl;
     std::string cgiExts = server.locations[response.location].cgi_extension[0];
     std::string cgiPaths = server.locations[response.location].cgi_path;
     int pipefd[2];
@@ -66,8 +66,9 @@ void checkCGI(Request request, Response &response, Server &server)
         close(pipefd[1]); // Close the write end of the pipe
 
         // Read data from the pipe
-        read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
-        std::cout << "--------- < " << args[1] << " > ---------" << std::endl;
+        size_t n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
+        buffer[n] = '\0'; // Terminate the string [not really needed
+        std::cout << "--------- < " << buffer << " > ---------" << std::endl;
         response.body = buffer;
         close(pipefd[0]);
 
@@ -79,18 +80,21 @@ void checkCGI(Request request, Response &response, Server &server)
 void handleDir(Request request, Response &response, Server &server)
 {
     AutoIndex autoindex;
+
     if (response.fullPath[response.fullPath.size() - 1] != '/')
     {
         response.fullPath += "/";
         response.redirect = request.path + "/";
         response.code = 301;
     }
-    if (!access((response.fullPath + server.locations[response.location].index).c_str(), R_OK))
+    if (request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&\
+        !server.locations[response.location].cgi_extension.empty() &&\
+        !access((response.fullPath + server.locations[response.location].index).c_str(), R_OK))
     {
         response.fullPath += server.locations[response.location].index;
         checkCGI(request, response, server);
     }
-    else if (server.locations[response.location].autoindex)
+    if (server.locations[response.location].autoindex)
     {
         response.code = 200;
         response.body = autoindex.getPage(response.fullPath.c_str(), request.path, server.host, server.port);
@@ -101,6 +105,9 @@ void handlingGet(Request request, Response &response, Server &server)
 {
     if (isDir(response.fullPath.c_str()) == -1)
         handleDir(request, response, server);
-    else if (!isDir(response.fullPath.c_str()))
+    else if (request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&\
+            !server.locations[response.location].cgi_extension.empty() && !isDir(response.fullPath.c_str()))
+            {
         checkCGI(request, response, server);
+            }
 }

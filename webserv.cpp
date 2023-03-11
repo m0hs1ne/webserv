@@ -9,7 +9,7 @@
 
 void startServers(std::vector<parsingConfig::server> servers)
 {
-    int server_fd[1024], new_socket = 0, max_sd, sd, activity, valread, rd = 0, s = 0;
+    int server_fd[1024], new_socket = 0, max_sd, sd, activity, valread, rd = 0, s = 0, valsent = 0;
     struct sockaddr_in address;
     Response res;
     int addrlen = sizeof(address);
@@ -34,7 +34,7 @@ void startServers(std::vector<parsingConfig::server> servers)
             perror("setsockopt");
             exit(EXIT_FAILURE);
         }
- 
+
         address.sin_family = AF_INET;
         address.sin_addr.s_addr = INADDR_ANY;
         address.sin_port = htons(servers[i].port);
@@ -139,22 +139,24 @@ void startServers(std::vector<parsingConfig::server> servers)
                         else if (body.size() <= 1000 && !body.empty())
                         {
                             std::string resp = dToh(body.size()) + "\r\n" + body + "\r\n";
-                            send(new_socket, resp.c_str(), resp.size(), 0);
+                            valsent += send(new_socket, resp.c_str(), resp.size(), 0);
                             body.clear();
                             res.body.clear();
                         }
                         else if (!body.empty())
                         {
                             std::string resp = dToh(1000) + "\r\n" + body.substr(0, 1000) + "\r\n";
-                            send(new_socket, resp.c_str(), resp.size(), 0);
+                            valsent += send(new_socket, resp.c_str(), resp.size(), 0);
                             body.erase(0, 1000);
                             res.body.erase(0, 1000);
                         }
                         else
                         {
                             send(new_socket,
-                                 "0\r\n", 4, 0);
+                                            "0\r\n", 4, 0);
                             std::cout << "body sent" << std::endl;
+                            std::cout << "valsent: " << valsent << std::endl;
+                            valsent = 0;
                             close(new_socket);
                             FD_CLR(new_socket, &writefds);
                             rd = 0;
