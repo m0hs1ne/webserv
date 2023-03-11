@@ -203,34 +203,29 @@ bool methodAllowed(Request request, Response &response, Server &server)
     return false;
 }
 
-// std::string contentLength(std::string body)
-// {
-//     if (body.size() <= 1000 && !body.empty())
-//     {
-//         std::string resp = dToh(body.size()) + "\r\n" + body + "\r\n";
-//         valsent += send(new_socket, resp.c_str(), resp.size(), 0);
-//         body.clear();
-//     }
-//     else if (!body.empty())
-//     {
-//         std::string resp = dToh(1000) + "\r\n" + body.substr(0, 1000) + "\r\n";
-//         valsent += send(new_socket, resp.c_str(), resp.size(), 0);
-//         body.erase(0, 1000);
-//         res.body.erase(0, 1000);
-//     }
-//     else
-//     {
-//         send(new_socket,
-//              "0\r\n", 4, 0);
-//         std::cout << "body sent" << std::endl;
-//         std::cout << "valsent: " << valsent << std::endl;
-//         valsent = 0;
-//         close(new_socket);
-//         FD_CLR(new_socket, &writefds);
-//         rd = 0;
-//         s = 0;
-//     }
-// }
+std::string contentLength(std::string body)
+{
+    size_t size = 0;
+    while (!body.empty())
+    {
+        if (body.size() <= 1000 && !body.empty())
+        {
+            size += dToh(body.size()).size() + body.size() + 4;
+            body.clear();
+        }
+        else if (!body.empty())
+        {
+            size += dToh(1000).size() + 1000 + 4;
+            body.erase(0, 1000);
+        }
+        else
+        {
+            size += dToh(0).size() + 4;
+        }
+    }
+    std::cout << "-------size: " << size << std::endl;
+    return itos(size);
+}
 
 void formResponse(Response &response, Server &server)
 {
@@ -252,7 +247,7 @@ void formResponse(Response &response, Server &server)
     {
         response.response += "Transfer-Encoding: chunked\r\n";
         response.response += "Content-Type: " + type + "\r\n";
-        response.response += "Content-length: " + itos(response.body.size()) + "\r\n";
+        response.response += "Content-length: " + contentLength(response.body) + "\r\n";
         response.response += "\r\n";
     }
     else
