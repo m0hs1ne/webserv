@@ -6,13 +6,10 @@
 void setEnv(Request request, Server &server)
 {
     if (!request.query.empty())
-    {
-        std::cout << request.query << std::endl;
         setenv("QUERY_STRING", request.query.c_str(), 1);
-        std::cout << getenv("QUERY_STRING") << std::endl;
-    }
     setenv("REQUEST_METHOD", "GET", 1);
     setenv("SERVER_PORT", itos(server.port).c_str(), 1);
+    setenv("REDIRECT_STATUS", itos(200).c_str(), 1);
 }
 
 void checkCGI(Request request, Response &response, Server &server)
@@ -24,13 +21,11 @@ void checkCGI(Request request, Response &response, Server &server)
     char buffer[2048];
     char *const args[] = {(char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL};
 
-    // Create the pipe
     if (pipe(pipefd) == -1)
     {
         std::cerr << "Error creating pipe\n";
         return;
     }
-    // Fork a child process
     setEnv(request, server);
     pid = fork();
 
@@ -42,37 +37,43 @@ void checkCGI(Request request, Response &response, Server &server)
 
     if (pid == 0)
     {
-        // Child process - write to pipe
-        close(pipefd[0]); // Close the read end of the pipe
-
-        // Redirect standard output to the write end of the pipe
+        close(pipefd[0]);
         if (dup2(pipefd[1], STDOUT_FILENO) == -1)
         {
             std::cerr << "Error redirecting standard output\n";
             return;
         }
-
-        // Execute the command
         if (execve(cgiPaths.c_str(), args, NULL) == -1)
         {
             std::cerr << "Error executing command\n";
             return;
         }
-        std::cout << "----- CHILD -----" << std::endl;
     }
     else
     {
-        // Parent process - read from pipe
-        close(pipefd[1]); // Close the write end of the pipe
-
-        // Read data from the pipe
-        size_t n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
-        buffer[n] = '\0'; // Terminate the string [not really needed
-        std::cout << "--------- < " << buffer << " > ---------" << std::endl;
-        response.body = buffer;
+        close(pipefd[1]);
+        std::string header;
+        std::string line;
+        std::string buf;
+        size_t n = 1;
+        while (n != 0)
+        {
+            n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
+            buffer[n] = '\0';
+            buf += buffer;
+        }
+        line = getLine(buf, 0);
+        int i = 1;
+        while (!line.empty())
+        {
+            header += line + "\r\n";
+            line = getLine(buf, i);
+            i++;
+        }
+        buf.erase(0, header.size());
+        response.cgiheader = header;
+        response.body = buf;
         close(pipefd[0]);
-
-        // Wait for the child process to complete
         wait(NULL);
     }
 }
@@ -86,6 +87,7 @@ void handleDir(Request request, Response &response, Server &server)
         response.fullPath += "/";
         response.redirect = request.path + "/";
         response.code = 301;
+        return ;
     }
     if (request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&\
         !server.locations[response.location].cgi_extension.empty() &&\
@@ -107,7 +109,5 @@ void handlingGet(Request request, Response &response, Server &server)
         handleDir(request, response, server);
     else if (request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&\
             !server.locations[response.location].cgi_extension.empty() && !isDir(response.fullPath.c_str()))
-            {
         checkCGI(request, response, server);
-            }
 }
