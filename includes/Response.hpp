@@ -15,6 +15,7 @@ class Response
         std::string body;
         std::string type;
         std::string redirect;
+        std::string cgiheader;
 
         Response();
         Response(const Response& other);

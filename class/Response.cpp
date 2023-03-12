@@ -22,6 +22,7 @@ Response& Response::operator=(const Response& other)
     this->fullPath = other.fullPath;
     this->body = other.body;
     this->type = other.type;
+    this->cgiheader = other.cgiheader;
     return *this;
 }
 
