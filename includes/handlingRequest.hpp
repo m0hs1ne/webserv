@@ -13,8 +13,8 @@
 
 typedef struct parsingConfig::server Server;
 
-Response &handleRequest(std::string buffer, Server &server);
-Request &fillRequest(const std::string &buffer);
+Response handleRequest(std::string buffer, Server &server);
+Request fillRequest(const std::string &buffer);
 bool isRequestWellFormed(Request request, Response &response, Server &server);
 void formResponse(Response &response, Server& server);
 bool matchLocation(Request request, Response &response, Server &server);

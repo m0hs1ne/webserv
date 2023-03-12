@@ -153,7 +153,7 @@ void startServers(std::vector<parsingConfig::server> servers)
                         else
                         {
                             send(new_socket,
-                                            "0\r\n", 4, 0);
+                                            "0\r\n\r\n",6 , 0);
                             std::cout << "body sent" << std::endl;
                             std::cout << "valsent: " << valsent << std::endl;
                             valsent = 0;

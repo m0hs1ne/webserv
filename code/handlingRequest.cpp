@@ -74,10 +74,11 @@ std::string setContentType(std::string path)
     return type;
 }
 
-Response &handleRequest(std::string buffer, Server &server)
+Response handleRequest(std::string buffer, Server &server)
 {
     Request request;
     Response *response = new Response();
+    Response resp;
     initHttpCode();
     request = fillRequest(buffer);
     if (isRequestWellFormed(request, *response, server) &&
@@ -86,12 +87,15 @@ Response &handleRequest(std::string buffer, Server &server)
         if (request.method == "GET")
             handlingGet(request, *response, server);
     formResponse(*response, server);
-    return *response;
+    resp = *response;
+    delete response;
+    return resp;
 }
 
-Request &fillRequest(const std::string &buffer)
+Request fillRequest(const std::string &buffer)
 {
     Request *req = new Request;
+    Request request;
     std::vector<std::string> splitArr;
 
     req->size = buffer.size();
@@ -113,7 +117,9 @@ Request &fillRequest(const std::string &buffer)
         req->attr[splitArr[0]] = splitArr[1];
         line = getLine(buffer, i);
     }
-    return *req;
+    request = *req;
+    delete req;
+    return request;
 }
 
 bool isRequestWellFormed(Request request, Response &response, Server &server)
@@ -203,29 +209,29 @@ bool methodAllowed(Request request, Response &response, Server &server)
     return false;
 }
 
-std::string contentLength(std::string body)
-{
-    size_t size = 0;
-    while (!body.empty())
-    {
-        if (body.size() <= 1000 && !body.empty())
-        {
-            size += dToh(body.size()).size() + body.size() + 4;
-            body.clear();
-        }
-        else if (!body.empty())
-        {
-            size += dToh(1000).size() + 1000 + 4;
-            body.erase(0, 1000);
-        }
-        else
-        {
-            size += dToh(0).size() + 4;
-        }
-    }
-    std::cout << "-------size: " << size << std::endl;
-    return itos(size);
-}
+// std::string contentLength(std::string body)
+// {
+//     size_t size = 0;
+//     while (!body.empty())
+//     {
+//         if (body.size() <= 1000 && !body.empty())
+//         {
+//             size += dToh(body.size()).size() + body.size() + 4;
+//             body.clear();
+//         }
+//         else if (!body.empty())
+//         {
+//             size += dToh(1000).size() + 1000 + 4;
+//             body.erase(0, 1000);
+//         }
+//         else
+//         {
+//             size += dToh(0).size() + 4;
+//         }
+//     }
+//     std::cout << "-------size: " << size << std::endl;
+//     return itos(size);
+// }
 
 void formResponse(Response &response, Server &server)
 {
@@ -243,13 +249,20 @@ void formResponse(Response &response, Server &server)
     response.response = "HTTP/1.1 ";
     response.response += code[response.code] + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
+    response.response += "Content-Length: " + itos(response.body.size()) + "\r\n";
+    std::cout << "-------size: " << response.body.size() << std::endl;
+    // exit(0);
     if (response.redirect.empty())
     {
         response.response += "Transfer-Encoding: chunked\r\n";
         response.response += "Content-Type: " + type + "\r\n";
-        response.response += "Content-length: " + contentLength(response.body) + "\r\n";
         response.response += "\r\n";
     }
     else
+    {
+        response.response += "Connection: close\r\n";
         response.response += "Location: " + response.redirect + "\r\n";
+        response.response += "\r\n";
+    }
+
 }
