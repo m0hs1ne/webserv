@@ -1,10 +1,49 @@
+
 #include "../../includes/handlingDelete.hpp"
 
 typedef struct parsingConfig::server Server;
 
-void handlingDelete(Request request, Response &response, Server &server)
+void handleDir(Response &response)
 {
-    (void)request;
+    if (response.fullPath[response.fullPath.size() - 1] != '/')
+    {
+        response.code = 409;
+        return ;
+    }
+    else
+    {
+        int result = remove(response.fullPath.c_str());
+
+        if (result == 0)
+            response.code = 204;
+        else
+        {
+            if (access(response.fullPath.c_str(), W_OK))
+                response.code = 403;
+            else
+                response.code = 500;
+        }
+    }
+}
+
+void handleFile(Response &response)
+{
+    int result = remove(response.fullPath.c_str());
+    if (result == 0)
+        response.code = 204;
+    else
+    {
+        if (access(response.fullPath.c_str(), W_OK))
+                response.code = 403;
+            else
+                response.code = 500;
+    }
+}
+void handlingDelete(Response &response)
+{
     (void)response;
-    (void)server;
+    if (isDir(response.fullPath.c_str()) == -1)
+        handleDir(response);
+    else if (!isDir(response.fullPath.c_str()))
+        handleFile(response);
 }

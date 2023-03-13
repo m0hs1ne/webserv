@@ -1,7 +1,8 @@
 #ifndef DELETE_HPP
 #define DELETE_HPP
 #include "handlingRequest.hpp"
+#include <cstdio>
 
-void handlingDelete(Request request, Response &response, Server &server);
+void handlingDelete(Response &response);
 
 #endif
