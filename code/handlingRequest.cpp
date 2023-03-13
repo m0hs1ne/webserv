@@ -223,10 +223,25 @@ void formGetResponse(Response &response, Server &server)
     }
 }
 
+void formDeleteResponse(Response &response, Server &server)
+{
+    if (server.error_pages.find(response.code) != server.error_pages.end())
+        response.returnFile = server.error_pages[response.code];
+    else
+        response.body = code[response.code];
+    response.response = "HTTP/1.1 ";
+    response.response += code[response.code] + "\r\n";
+    response.response += "Server: " + server.names[0] + "\r\n";
+    response.response += "Content-Length: 0\r\n";
+    response.response += "\r\n";
+}
+
 void formResponse(Request request, Response &response, Server &server)
 {
     if (request.method == "GET")
         formGetResponse(response, server);
+    else if (request.method == "DELETE")
+        formDeleteResponse(response, server);
     // do if condition of POST method here
 }
 

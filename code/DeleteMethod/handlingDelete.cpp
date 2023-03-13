@@ -5,6 +5,7 @@ typedef struct parsingConfig::server Server;
 
 void handleDir(Response &response)
 {
+
     if (response.fullPath[response.fullPath.size() - 1] != '/')
     {
         response.code = 409;
@@ -12,7 +13,7 @@ void handleDir(Response &response)
     }
     else
     {
-        int result = remove(response.fullPath.c_str());
+        int result = std::remove(response.fullPath.c_str());
 
         if (result == 0)
             response.code = 204;
@@ -28,7 +29,7 @@ void handleDir(Response &response)
 
 void handleFile(Response &response)
 {
-    int result = remove(response.fullPath.c_str());
+    int result = std::remove(response.fullPath.c_str());
     if (result == 0)
         response.code = 204;
     else
@@ -41,7 +42,6 @@ void handleFile(Response &response)
 }
 void handlingDelete(Response &response)
 {
-    (void)response;
     if (isDir(response.fullPath.c_str()) == -1)
         handleDir(response);
     else if (!isDir(response.fullPath.c_str()))
