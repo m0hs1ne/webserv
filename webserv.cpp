@@ -3,6 +3,7 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <signal.h>
 #include <sys/select.h>
 #include "includes/handlingRequest.hpp"
 #define MAX 3000
@@ -20,6 +21,8 @@ void startServers(std::vector<parsingConfig::server> servers)
 
     for (int i = 0; i < 30; i++)
         server_fd[i] = 0;
+
+    signal(SIGPIPE, SIG_IGN);
 
     for (size_t i = 0; i < servers.size(); i++)
     {

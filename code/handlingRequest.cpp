@@ -3,7 +3,7 @@
 #include "../includes/handlingDelete.hpp"
 
 std::map<int, std::string> code;
-std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=._~!*'():;%@+$,/?#[]";
+std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=._~!*'():;%@+$,/?#[]' '";
 
 void initHttpCode()
 {
@@ -24,6 +24,44 @@ void initHttpCode()
         code[200] = "200 OK";
     }
 }
+
+bool urlDecode(Request *req, Response &response)
+{
+    std::ostringstream decoded;
+
+    for (std::string::const_iterator it = req->path.begin(); it != req->path.end(); ++it)
+    {
+        if (*it == '%')
+        {
+            std::istringstream hex_string(std::string(it + 1, it + 3));
+            int hex_value = 0;
+            hex_string >> std::hex >> hex_value;
+
+            decoded << static_cast<char>(hex_value);
+            it += 2;
+        }
+        else if (*it == '+')
+        {
+            decoded << ' ';
+        }
+        else
+        {
+            decoded << *it;
+        }
+    }
+    for (size_t i = 0; i < decoded.str().size(); i++)
+    {
+        if (allowedChar.find(decoded.str()[i]) == std::string::npos)
+        {
+            response.code = 400;
+            return false;
+        }
+    }
+    req->path = decoded.str();
+    std::cout << "decoded path: " << req->path << std::endl;
+    return true;
+}
+
 
 std::string setContentType(std::string path)
 {
@@ -253,6 +291,7 @@ Response handleRequest(std::string buffer, Server &server)
     initHttpCode();
     request = fillRequest(buffer);
     if (isRequestWellFormed(request, *response, server) &&
+        urlDecode(&request, *response) &&
         matchLocation(request, *response, server) &&
         methodAllowed(request, *response, server))
     {
