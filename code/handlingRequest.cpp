@@ -1,5 +1,6 @@
 #include "../includes/handlingRequest.hpp"
 #include "../includes/handlingGet.hpp"
+#include "../includes/handlingDelete.hpp"
 
 std::map<int, std::string> code;
 std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=._~!*'():;%@+$,/?#[]";
@@ -239,11 +240,13 @@ Response handleRequest(std::string buffer, Server &server)
     if (isRequestWellFormed(request, *response, server) &&
         matchLocation(request, *response, server) &&
         methodAllowed(request, *response, server))
+    {
         if (request.method == "GET")
             handlingGet(request, *response, server);
         else if (request.method == "DELETE")
             handlingDelete(request, *response, server);
         // do if condition of POST method here
+    }
     formResponse(request, *response, server);
     resp = *response;
     delete response;
