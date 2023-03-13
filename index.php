@@ -11,7 +11,7 @@
       <li>Item 2</li>
       <li>Item 3</li>
       <?php
-            echo ($_GET['k']);
+            echo ($_GET["k"]);
             echo "yesyes"; ?>
     </ul>
   </body>

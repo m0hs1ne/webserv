@@ -16,7 +16,7 @@ typedef struct parsingConfig::server Server;
 Response handleRequest(std::string buffer, Server &server);
 Request fillRequest(const std::string &buffer);
 bool isRequestWellFormed(Request request, Response &response, Server &server);
-void formResponse(Response &response, Server& server);
+void formResponse(Request request, Response &response, Server &server);
 bool matchLocation(Request request, Response &response, Server &server);
 bool methodAllowed(Request request, Response &response, Server &server);
 void checkRedirection(Response &response, Server &server,Request request);

@@ -74,24 +74,6 @@ std::string setContentType(std::string path)
     return type;
 }
 
-Response handleRequest(std::string buffer, Server &server)
-{
-    Request request;
-    Response *response = new Response();
-    Response resp;
-    initHttpCode();
-    request = fillRequest(buffer);
-    if (isRequestWellFormed(request, *response, server) &&
-        matchLocation(request, *response, server) &&
-        methodAllowed(request, *response, server))
-        if (request.method == "GET")
-            handlingGet(request, *response, server);
-    formResponse(*response, server);
-    resp = *response;
-    delete response;
-    return resp;
-}
-
 Request fillRequest(const std::string &buffer)
 {
     Request *req = new Request;
@@ -209,31 +191,7 @@ bool methodAllowed(Request request, Response &response, Server &server)
     return false;
 }
 
-// std::string contentLength(std::string body)
-// {
-//     size_t size = 0;
-//     while (!body.empty())
-//     {
-//         if (body.size() <= 1000 && !body.empty())
-//         {
-//             size += dToh(body.size()).size() + body.size() + 4;
-//             body.clear();
-//         }
-//         else if (!body.empty())
-//         {
-//             size += dToh(1000).size() + 1000 + 4;
-//             body.erase(0, 1000);
-//         }
-//         else
-//         {
-//             size += dToh(0).size() + 4;
-//         }
-//     }
-//     std::cout << "-------size: " << size << std::endl;
-//     return itos(size);
-// }
-
-void formResponse(Response &response, Server &server)
+void formGetResponse(Response &response, Server &server)
 {
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
@@ -250,8 +208,6 @@ void formResponse(Response &response, Server &server)
     response.response += code[response.code] + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
     response.response += "Content-Length: " + itos(response.body.size()) + "\r\n";
-    std::cout << "-------size: " << response.body.size() << std::endl;
-    // exit(0);
     if (response.redirect.empty())
     {
         response.response += "Transfer-Encoding: chunked\r\n";
@@ -264,5 +220,30 @@ void formResponse(Response &response, Server &server)
         response.response += "Location: " + response.redirect + "\r\n";
         response.response += "\r\n";
     }
+}
 
+void formResponse(Request request, Response &response, Server &server)
+{
+    if (request.method == "GET")
+        formGetResponse(response, server);
+    // do if condition of POST method here
+}
+
+Response handleRequest(std::string buffer, Server &server)
+{
+    Request request;
+    Response *response = new Response();
+    Response resp;
+    initHttpCode();
+    request = fillRequest(buffer);
+    if (isRequestWellFormed(request, *response, server) &&
+        matchLocation(request, *response, server) &&
+        methodAllowed(request, *response, server))
+        if (request.method == "GET")
+            handlingGet(request, *response, server);
+        // do if condition of POST method here
+    formResponse(request, *response, server);
+    resp = *response;
+    delete response;
+    return resp;
 }

@@ -3,13 +3,16 @@
 #include "../../includes/Autoindex.hpp"
 #include "../../includes/tools.hpp"
 
-void setEnv(Request request, Server &server)
+void setEnv(Response response, Request request, Server &server)
 {
+    (void)response;
     if (!request.query.empty())
         setenv("QUERY_STRING", request.query.c_str(), 1);
     setenv("REQUEST_METHOD", "GET", 1);
     setenv("SERVER_PORT", itos(server.port).c_str(), 1);
     setenv("REDIRECT_STATUS", itos(200).c_str(), 1);
+    setenv("PATH_INFO", request.path.c_str(), 1);
+    setenv("PATH_TRANSLATED", response.fullPath.c_str(), 1);
 }
 
 void checkCGI(Request request, Response &response, Server &server)
@@ -26,7 +29,7 @@ void checkCGI(Request request, Response &response, Server &server)
         std::cerr << "Error creating pipe\n";
         return;
     }
-    setEnv(request, server);
+    setEnv(response, request, server);
     pid = fork();
 
     if (pid == -1)
@@ -37,6 +40,7 @@ void checkCGI(Request request, Response &response, Server &server)
 
     if (pid == 0)
     {
+        std::cout << "PATH_TRANSLATED : " << getenv("PATH_TRANSLATED") << std::endl;
         close(pipefd[0]);
         if (dup2(pipefd[1], STDOUT_FILENO) == -1)
         {
