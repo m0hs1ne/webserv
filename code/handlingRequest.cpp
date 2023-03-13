@@ -241,6 +241,8 @@ Response handleRequest(std::string buffer, Server &server)
         methodAllowed(request, *response, server))
         if (request.method == "GET")
             handlingGet(request, *response, server);
+        else if (request.method == "DELETE")
+            handlingDelete(request, *response, server);
         // do if condition of POST method here
     formResponse(request, *response, server);
     resp = *response;
