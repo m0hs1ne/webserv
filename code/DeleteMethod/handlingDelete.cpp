@@ -50,6 +50,7 @@ void handleDir(Response &response)
                 response.code = 500;
         }
     }
+    closedir(dir);
 }
 
 void handlingDelete(Response &response)
