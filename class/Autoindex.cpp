@@ -18,6 +18,7 @@ AutoIndex &AutoIndex::operator=(AutoIndex const &src)
 std::string AutoIndex::getPage(const char *path, std::string reqPath, std::string host, int port)
 {
     DIR *dir = opendir(path);
+
     std::string page =
         "<!DOCTYPE html>\n\
     <html>\n\

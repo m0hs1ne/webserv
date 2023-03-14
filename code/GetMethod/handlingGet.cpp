@@ -102,8 +102,15 @@ void handleDir(Request request, Response &response, Server &server)
     }
     if (server.locations[response.location].autoindex)
     {
-        response.code = 200;
-        response.body = autoindex.getPage(response.fullPath.c_str(), request.path, server.host, server.port);
+        if(!access(response.fullPath.c_str(), R_OK))
+        {
+            response.code = 200;
+            response.body = autoindex.getPage(response.fullPath.c_str(), request.path, server.host, server.port);
+        }
+        else
+        {
+            response.code = 403;
+        }
     }
 }
 
