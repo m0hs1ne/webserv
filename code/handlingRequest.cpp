@@ -194,7 +194,10 @@ bool matchLocation(Request request, Response &response, Server &server)
 void checkPathFound(Request request, Response &response, Server &server)
 {
     if (!server.locations[response.location].root.empty())
+    {
+        std::cout << "root: " << server.locations[response.location].root << std::endl;
         response.root = server.locations[response.location].root;
+    }
     else
         response.root = server.root;
     response.fullPath = response.root + request.path;

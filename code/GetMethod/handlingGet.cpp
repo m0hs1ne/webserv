@@ -91,10 +91,10 @@ void handleDir(Request request, Response &response, Server &server)
         response.fullPath += "/";
         response.redirect = request.path + "/";
         response.code = 301;
-        return ;
+        return;
     }
-    if (request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&\
-        !server.locations[response.location].cgi_extension.empty() &&\
+    if (!server.locations[response.location].cgi_extension.empty() &&
+        request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&
         !access((response.fullPath + server.locations[response.location].index).c_str(), R_OK))
     {
         response.fullPath += server.locations[response.location].index;
@@ -111,7 +111,8 @@ void handlingGet(Request request, Response &response, Server &server)
 {
     if (isDir(response.fullPath.c_str()) == -1)
         handleDir(request, response, server);
-    else if (request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&\
-            !server.locations[response.location].cgi_extension.empty() && !isDir(response.fullPath.c_str()))
+    else if (!server.locations[response.location].cgi_extension.empty() &&
+             request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&
+             !isDir(response.fullPath.c_str()))
         checkCGI(request, response, server);
 }
