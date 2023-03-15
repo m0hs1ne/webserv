@@ -31,7 +31,7 @@ void startServers(std::vector<parsingConfig::server> servers)
             perror("socket failed");
             exit(EXIT_FAILURE);
         }
-        // fcntl(server_fd[i], F_SETFL, O_NONBLOCK);
+        fcntl(server_fd[i], F_SETFL, O_NONBLOCK);
         if (setsockopt(server_fd[i], SOL_SOCKET, SO_REUSEPORT, &valread, sizeof(valread)))
         {
             perror("setsockopt");
@@ -101,7 +101,7 @@ void startServers(std::vector<parsingConfig::server> servers)
                         perror("accept");
                         exit(EXIT_FAILURE);
                     }
-                    // fcntl(new_socket, F_SETFL, O_NONBLOCK);
+                    fcntl(new_socket, F_SETFL, O_NONBLOCK);
                     FD_SET(new_socket, &writefds);
                 }
                 if (FD_ISSET(new_socket, &writefds))
@@ -139,7 +139,7 @@ void startServers(std::vector<parsingConfig::server> servers)
                             s = 1;
                             std::cout << "header sent" << std::endl;
                         }
-                        else if (body.size() <= 1000 && !body.empty())
+                        else if (body.size() <= 5000 && !body.empty())
                         {
                             std::string resp = dToh(body.size()) + "\r\n" + body + "\r\n";
                             valsent += send(new_socket, resp.c_str(), resp.size(), 0);
@@ -148,10 +148,10 @@ void startServers(std::vector<parsingConfig::server> servers)
                         }
                         else if (!body.empty())
                         {
-                            std::string resp = dToh(1000) + "\r\n" + body.substr(0, 1000) + "\r\n";
+                            std::string resp = dToh(5000) + "\r\n" + body.substr(0, 5000) + "\r\n";
                             valsent += send(new_socket, resp.c_str(), resp.size(), 0);
-                            body.erase(0, 1000);
-                            res.body.erase(0, 1000);
+                            body.erase(0, 5000);
+                            res.body.erase(0, 5000);
                         }
                         else
                         {
