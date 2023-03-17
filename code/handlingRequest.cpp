@@ -113,7 +113,7 @@ std::string setContentType(std::string path)
     return type;
 }
 
-Request fillRequest(const std::string &buffer)
+Request fillRequest(const std::string &buffer) // this is your part a zakaria
 {
     Request *req = new Request;
     Request request;
@@ -125,18 +125,25 @@ Request fillRequest(const std::string &buffer)
     splitArr = split(line, ' ', 0);
     req->method = splitArr[0];
     req->path = splitArr[1];
-    splitArr = split(req->path, '?', 1);
-    if (splitArr.size() > 1)
+    if (req->method == "GET")
     {
-        req->path = splitArr[0];
-        req->query = splitArr[1];
+        splitArr = split(req->path, '?', 1);
+        if (splitArr.size() > 1)
+        {
+            req->path = splitArr[0];
+            req->query = splitArr[1];
+        }
+        line = getLine(buffer, 1);
+        for (int i = 1; !line.empty(); i++)
+        {
+            splitArr = split(line, ':', 1);
+            req->attr[splitArr[0]] = splitArr[1];
+            line = getLine(buffer, i);
+        }
     }
-    line = getLine(buffer, 1);
-    for (int i = 1; !line.empty(); i++)
+    else if (req->method == "POST")
     {
-        splitArr = split(line, ':', 1);
-        req->attr[splitArr[0]] = splitArr[1];
-        line = getLine(buffer, i);
+        // post parse
     }
     request = *req;
     delete req;
@@ -299,7 +306,7 @@ Response handleRequest(std::string buffer, Server &server)
             handlingGet(request, *response, server);
         else if (request.method == "DELETE")
             handlingDelete(*response);
-        // do if condition of POST method here
+        // do if condition of POST;
     }
     formResponse(request, *response, server);
     resp = *response;
