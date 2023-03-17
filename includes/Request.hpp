@@ -8,6 +8,8 @@ class Request
 {
 public:
     std::string method;
+    std::string body;
+    std::map<std::string, std::string> formUrlEncoded;
     std::string path;
     std::string query;
     bool pathFound;

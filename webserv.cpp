@@ -6,7 +6,7 @@
 #include <signal.h>
 #include <sys/select.h>
 #include "includes/handlingRequest.hpp"
-#define MAX 3000
+#define MAX 4445851
 
 void startServers(std::vector<parsingConfig::server> servers)
 {
@@ -14,7 +14,6 @@ void startServers(std::vector<parsingConfig::server> servers)
     struct sockaddr_in address;
     Response res;
     int addrlen = sizeof(address);
-    struct timeval timeout;
 
     fd_set readfds;
     fd_set writefds;
@@ -58,8 +57,6 @@ void startServers(std::vector<parsingConfig::server> servers)
     while (true)
     {
         FD_ZERO(&readfds);
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
         max_sd = server_fd[servers.size() - 1];
         for (size_t i = 0; i < servers.size(); i++)
         {
@@ -78,7 +75,7 @@ void startServers(std::vector<parsingConfig::server> servers)
             }
         }
         std::cout << "max_sd: " << max_sd << std::endl;
-        if ((activity = select(max_sd + 1, &readfds, &writefds, NULL, &timeout)) < 0)
+        if ((activity = select(max_sd + 1, &readfds, &writefds, NULL,NULL)) < 0)
         {
             perror("select");
             exit(EXIT_FAILURE);
@@ -114,9 +111,10 @@ void startServers(std::vector<parsingConfig::server> servers)
                         valread = read(new_socket, buffer, MAX - 1);
                         std::cout << "valread: " << valread << std::endl;
                     }
-                    // std::cout << buffer << std::endl;
+                    std::cout << buffer << std::endl;
                     if (valread <= 0)
                     {
+                        perror("read");
                         close(new_socket);
                         FD_CLR(new_socket, &writefds);
                         rd = 0;

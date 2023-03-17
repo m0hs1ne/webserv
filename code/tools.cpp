@@ -15,6 +15,22 @@ size_t countLines(std::string src)
     return lines;
 }
 
+bool locationFind(std::string path, std::string location)
+{
+    size_t i = 0;
+    size_t notFound = 0;
+
+    while (path[i] && location[i])
+    {
+        if (path[i] != location[i])
+            notFound = 1;
+        ++i;
+    }
+    if (location[i] == '\0' && !notFound)
+        return true;
+    return false;
+}
+
 std::string dToh(size_t d)
 {
     std::stringstream ss;

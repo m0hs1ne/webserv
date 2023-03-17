@@ -63,7 +63,6 @@ bool urlDecode(Request *req, Response &response)
     return true;
 }
 
-
 std::string setContentType(std::string path)
 {
     std::string type;
@@ -170,23 +169,49 @@ bool isRequestWellFormed(Request request, Response &response, Server &server)
 
 bool matchLocation(Request request, Response &response, Server &server)
 {
-    int pos;
-    size_t i;
-    for (i = 0; i < server.locations.size(); i++)
+    size_t i = 0;
+    std::vector<std::string> splitPath;
+    std::vector<std::string> splitLocation;
+    int location = -1;
+
+    splitPath = split(request.path, '/', 0);
+    while (!splitPath.empty() && i < server.locations.size())
     {
-        pos = request.path.find(server.locations[i].name);
-        if (pos == 0)
+        splitLocation = split(server.locations[i].name, '/', 0);
+        for (size_t j = 0; j < splitLocation.size(); j++)
         {
-            response.code = 200;
-            break;
+            if (splitLocation[j] == splitPath[j])
+            {
+                response.code = 200;
+                location = (int)i;
+            }
+            else
+                break;
         }
-        else
-            response.code = 404;
+        splitLocation.clear();
+        i++;
     }
-    if (response.code == 404)
-        return false;
-    std::cout << request.path << "     " << server.locations[i].name << std::endl;
-    response.location = i;
+    if (location == -1)
+    {
+        for (size_t i = 0; i < server.locations.size(); i++)
+        {
+            if (server.locations[i].name == "/")
+            {
+                response.code = 200;
+                location = (int)i;
+                break;
+            }
+        }
+        if (location == -1)
+        {
+            response.code = 404;
+            return false;
+        }
+    }
+    else
+        request.path = request.path.substr(server.locations[location].name.size());
+    std::cout << request.path << "  |  " << server.locations[location].name << std::endl;
+    response.location = location;
     checkPathFound(request, response, server);
     checkRedirection(response, server, request);
     return true;
@@ -210,12 +235,13 @@ void checkPathFound(Request request, Response &response, Server &server)
 
 void checkRedirection(Response &response, Server &server, Request request)
 {
+    (void)request;
     if (!server.locations[response.location].return_pages.empty())
     {
         response.code = 301;
         response.returnFile = server.locations[response.location].return_pages;
     }
-    else if (!server.locations[response.location].index.empty() && request.path == server.locations[response.location].name)
+    else if (!server.locations[response.location].index.empty())
     {
         response.code = 200;
         response.returnFile = server.locations[response.location].index;
@@ -278,14 +304,34 @@ void formDeleteResponse(Response &response, Server &server)
     response.response += "\r\n";
 }
 
+void formPostResponse(Response &response, Server &server)
+{
+    if (server.error_pages.find(response.code) != server.error_pages.end())
+        response.returnFile = server.error_pages[response.code];
+    if (response.body.empty() && response.returnFile.empty()){
+        response.body = code[response.code];
+    }
+    else if (response.body.empty() && !response.returnFile.empty())
+    {
+        std::cout << "return file: " << response.returnFile << std::endl;
+        response.body = readFile(response.returnFile);
+    }
+    response.response = "HTTP/1.1 ";
+    response.response += code[response.code] + "\r\n";
+    response.response += "Server: " + server.names[0] + "\r\n";
+    response.response += "Content-Length: "+itos(response.body.size())+"\r\n";
+    response.response += "Transfer-Encoding: chunked\r\n";
+    response.response += "Content-Type: text/html\r\n";
+    response.response += "\r\n";}
+
 void formResponse(Request request, Response &response, Server &server)
 {
     if (request.method == "GET")
         formGetResponse(response, server);
     else if (request.method == "DELETE")
         formDeleteResponse(response, server);
-    // else if (request.method == "POST")
-    //     for
+    else if (request.method == "POST")
+        formPostResponse(response, server);
     // do if condition of POST method here
 }
 
@@ -307,7 +353,6 @@ Response handleRequest(std::string buffer, Server &server)
             handlingDelete(*response);
         else if (request.method == "POST")
             handlingPost(request, *response, server);
-        // do if condition of POST method here
     }
     formResponse(request, *response, server);
     resp = *response;

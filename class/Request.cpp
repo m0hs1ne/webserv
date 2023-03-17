@@ -14,6 +14,8 @@ Request& Request::operator=(const Request& other)
     this->attr = other.attr;
     this->size = other.size;
     this->query = other.query;
+    this->body = other.body;
+    this->formUrlEncoded = other.formUrlEncoded;
     return *this;
 }
 Request::~Request(){}
