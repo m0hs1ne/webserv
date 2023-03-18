@@ -111,6 +111,7 @@ void startServers(std::vector<parsingConfig::server> servers)
                         valread = read(new_socket, buffer, MAX - 1);
                         std::cout << "valread: " << valread << std::endl;
                     }
+                    std::cout << "buffer: " << buffer << std::endl;
                     if (valread <= 0)
                     {
                         perror("read");

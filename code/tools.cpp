@@ -108,6 +108,19 @@ std::string getLine(std::string src, size_t n)
     return (std::string(src, i, j));
 }
 
+std::vector<std::string> splitString( std::string str,  std::string delimiter) {
+    std::vector<std::string> tokens;
+    size_t start = 0;
+    size_t end = str.find(delimiter);
+    while (end != std::string::npos) {
+        tokens.push_back(str.substr(start, end - start));
+        start = end + delimiter.length();
+        end = str.find(delimiter, start);
+    }
+    tokens.push_back(str.substr(start));
+    return tokens;
+}
+
 std::vector<std::string> split(std::string str, char c, int stop)
 {
     std::vector<std::string> res;
