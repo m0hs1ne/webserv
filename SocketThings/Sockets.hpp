@@ -12,6 +12,6 @@ class SocketConnection
         std::string server_response;
         int socket_fd;
         int socket_port;
-        struct sockaddr_in addr;
+        struct sockaddr_in addr; // memset it // 0 '
 };
 
