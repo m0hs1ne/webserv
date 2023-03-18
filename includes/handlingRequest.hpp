@@ -22,4 +22,5 @@ bool methodAllowed(Request request, Response &response, Server &server);
 void checkRedirection(Response &response, Server &server,Request request);
 void checkPathFound(Request request, Response &response, Server &server);
 std::string setContentType(std::string path);
+bool urlDecode(Request *req, Response &response);
 #endif

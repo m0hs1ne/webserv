@@ -15,6 +15,35 @@ size_t countLines(std::string src)
     return lines;
 }
 
+std::string urlDecodeStr(std::string str)
+{
+    std::ostringstream decoded;
+    std::string rslt;
+
+    for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
+    {
+        if (*it == '%')
+        {
+            std::istringstream hex_string(std::string(it + 1, it + 3));
+            int hex_value = 0;
+            hex_string >> std::hex >> hex_value;
+
+            decoded << static_cast<char>(hex_value);
+            it += 2;
+        }
+        else if (*it == '+')
+        {
+            decoded << ' ';
+        }
+        else
+        {
+            decoded << *it;
+        }
+    }
+    rslt = decoded.str();
+    return rslt;
+}
+
 bool locationFind(std::string path, std::string location)
 {
     size_t i = 0;

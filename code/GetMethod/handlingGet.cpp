@@ -40,7 +40,6 @@ void checkCGI(Request request, Response &response, Server &server)
 
     if (pid == 0)
     {
-        std::cout << "PATH_TRANSLATED : " << getenv("PATH_TRANSLATED") << std::endl;
         close(pipefd[0]);
         if (dup2(pipefd[1], STDOUT_FILENO) == -1)
         {

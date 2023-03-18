@@ -113,11 +113,27 @@ std::string setContentType(std::string path)
     return type;
 }
 
+void fillPostBody(std::string buffer, Request &req, int line)
+{
+    std::vector<std::string> splitArr;
+    std::string bodyLine;
+
+    buffer += "\nEOF";
+    bodyLine = getLine(buffer, line);
+    line++;
+    for (int i = line; bodyLine != "EOF"; i++)
+    {
+        req.body += bodyLine  + "\n";
+        bodyLine = getLine(buffer, i);
+    }
+}
+
 Request fillRequest(const std::string &buffer)
 {
     Request *req = new Request;
     Request request;
     std::vector<std::string> splitArr;
+    int i;
 
     req->size = buffer.size();
     std::string line = getLine(buffer, 0);
@@ -132,12 +148,14 @@ Request fillRequest(const std::string &buffer)
         req->query = splitArr[1];
     }
     line = getLine(buffer, 1);
-    for (int i = 1; !line.empty(); i++)
+    for (i = 1; !line.empty(); i++)
     {
         splitArr = split(line, ':', 1);
         req->attr[splitArr[0]] = splitArr[1];
         line = getLine(buffer, i);
     }
+    if (req->method == "POST")
+        fillPostBody(buffer, *req, i);
     request = *req;
     delete req;
     return request;
@@ -220,10 +238,7 @@ bool matchLocation(Request request, Response &response, Server &server)
 void checkPathFound(Request request, Response &response, Server &server)
 {
     if (!server.locations[response.location].root.empty())
-    {
-        std::cout << "root: " << server.locations[response.location].root << std::endl;
         response.root = server.locations[response.location].root;
-    }
     else
         response.root = server.root;
     response.fullPath = response.root + request.path;
