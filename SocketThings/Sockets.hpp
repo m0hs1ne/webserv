@@ -13,5 +13,6 @@ class SocketConnection
         int socket_fd;
         int socket_port;
         struct sockaddr_in addr; // memset it // 0 '
+        std::vector<int> connections;
 };
 
