@@ -4,6 +4,14 @@
 #include <map>
 #include <vector>
 
+typedef struct Part
+{
+    std::string name;
+    std::string filename;
+    std::string contentType;
+    std::string body;
+}Part;
+
 class Request
 {
 public:
@@ -15,6 +23,8 @@ public:
     bool pathFound;
     std::map<std::string, std::string> attr;
     size_t size;
+    std::vector<Part> parts;
+    std::map<std::string, std::string> data;
 
     Request();
     Request(const Request& other);

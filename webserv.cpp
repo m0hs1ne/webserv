@@ -74,7 +74,6 @@ void startServers(std::vector<parsingConfig::server> servers)
                     max_sd = i;
             }
         }
-        std::cout << "max_sd: " << max_sd << std::endl;
         if ((activity = select(max_sd + 1, &readfds, &writefds, NULL,NULL)) < 0)
         {
             perror("select");
@@ -82,7 +81,6 @@ void startServers(std::vector<parsingConfig::server> servers)
         }
         if (activity == 0)
         {
-            std::cout << "waiting connection" << std::endl;
             continue;
         }
         std::cout << "Activity " << activity << std::endl;
@@ -103,15 +101,12 @@ void startServers(std::vector<parsingConfig::server> servers)
                 }
                 if (FD_ISSET(new_socket, &writefds))
                 {
-                    std::cout << "New connection" << std::endl;
-                    std::cout << "Accepted socket: " << new_socket << std::endl;
                     char buffer[MAX] = {0};
                     if (rd == 0)
                     {
                         valread = read(new_socket, buffer, MAX - 1);
                         std::cout << "valread: " << valread << std::endl;
                     }
-                    std::cout << "buffer: " << buffer << std::endl;
                     if (valread <= 0)
                     {
                         perror("read");
@@ -135,7 +130,7 @@ void startServers(std::vector<parsingConfig::server> servers)
                             header.clear();
                             res.response.clear();
                             s = 1;
-                            std::cout << "header sent" << std::endl;
+                            // std::cout << "header sent" << std::endl;
                         }
                         else if (body.size() <= 5000 && !body.empty())
                         {
@@ -155,15 +150,12 @@ void startServers(std::vector<parsingConfig::server> servers)
                         {
                             send(new_socket,
                                             "0\r\n\r\n",6 , 0);
-                            std::cout << "body sent" << std::endl;
-                            std::cout << "valsent: " << valsent << std::endl;
                             valsent = 0;
                             close(new_socket);
                             FD_CLR(new_socket, &writefds);
                             rd = 0;
                             s = 0;
                         }
-                        std::cout << "Response sent" << std::endl;
                         // close(new_socket);
                         // FD_CLR(new_socket, &readfds);
                     }

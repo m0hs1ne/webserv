@@ -1,34 +1,28 @@
 #include "../../includes/handlingPost.hpp"
 
-void parseMultiPart(std::string part, std::string path, Request request, Response &res)
+void parseMultiPart(std::string part, Request &request)
 {
-    std::string name;
-    std::string filename;
-    std::string contentType;
-    std::string body;
-    (void)request;
-    (void)res;
-    (void)path;
-
+    Part Part;
     if (part.find("Content-Disposition: form-data; name=\"") != std::string::npos)
     {
-        name = part.substr(part.find("Content-Disposition: form-data; name=\"") + 38);
-        name = name.substr(0, name.find("\""));
+        Part.name = part.substr(part.find("Content-Disposition: form-data; name=\"") + 38);
+        Part.name = Part.name.substr(0, Part.name.find("\""));
     }
-    if(part.find("filename=\"") != std::string::npos)
+    if (part.find("filename=\"") != std::string::npos)
     {
-        filename = part.substr(part.find("filename=\"") + 10);
-        filename = filename.substr(0, filename.find("\""));
+        Part.filename = part.substr(part.find("filename=\"") + 10);
+        Part.filename = Part.filename.substr(0, Part.filename.find("\""));
     }
 
     if (part.find("Content-Type: ") != std::string::npos)
     {
-        contentType = part.substr(part.find("Content-Type: ") + 14);
-        contentType = contentType.substr(0, contentType.find("\n"));
+        Part.contentType = part.substr(part.find("Content-Type: ") + 14);
+        Part.contentType = Part.contentType.substr(0, Part.contentType.find("\n"));
     }
-    // std::cout << "name: " << name << std::endl;
-    // std::cout << "filename: " << filename << std::endl;
-    std::cout << "contentType: " << contentType << std::endl;
+
+    if (part.find("\n\n") != std::string::npos)
+        Part.body = part.substr(part.find("\n\n") + 2);
+    request.parts.push_back(Part);
 }
 
 void handlingPost(Request request, Response &response, Server &server)
@@ -36,14 +30,29 @@ void handlingPost(Request request, Response &response, Server &server)
     std::string contentType;
     std::string contentLength;
     std::string body;
-    std::string path;
+    std::string uploadPath;
 
     if (server.locations[response.location].upload_enable)
     {
         if (!server.locations[response.location].upload_path.empty())
-            path = server.locations[response.location].root + server.locations[response.location].upload_path;
+        {
+            uploadPath = server.locations[response.location].root + server.locations[response.location].upload_path;
+            if (uploadPath[uploadPath.size() - 1] == '/')
+                uploadPath.erase(uploadPath.size() - 1, 1);
+        }
         else
-            path = server.locations[response.location].root + "/uploads";
+        {
+            uploadPath = server.locations[response.location].root + "/uploads";
+        }
+        if (access(uploadPath.c_str(), F_OK) == -1)
+        {
+            int status = mkdir(uploadPath.c_str(), 0777);
+            if (status == -1)
+            {
+                response.code = 500;
+                return;
+            }
+        }
     }
     else
     {
@@ -62,7 +71,6 @@ void handlingPost(Request request, Response &response, Server &server)
         std::string key = urlDecodeStr(request.body.substr(0, request.body.find("=")));
         std::string value = urlDecodeStr(request.body.substr(request.body.find("=") + 1));
         request.formUrlEncoded[key] = value;
-        std::cout << "---->" << key << "value " << value << std::endl;
     }
 
     else if (contentType.find("multipart/form-data") != std::string::npos)
@@ -73,8 +81,25 @@ void handlingPost(Request request, Response &response, Server &server)
 
         for (size_t i = 0; i < files.size(); i++)
         {
-            if(!files[i].empty())
-                parseMultiPart(files[i], path, request,response);
+            if (!files[i].empty())
+                parseMultiPart(files[i], request);
+        }
+        std::cout << "request.parts.size(): " << request.parts.size() << std::endl;
+        for (size_t i = 0; i < request.parts.size(); i++)
+        {
+            if (!request.parts[i].filename.empty())
+            {
+                std::string file = uploadPath + "/" + request.parts[i].filename;
+                std::ofstream ofs(file);
+                ofs << request.parts[i].body;
+                ofs.close();
+            }
+            else
+            {
+                request.data[request.parts[i].name] = request.parts[i].body;
+                std::cout << "request.parts[i].name: " << request.parts[i].name << std::endl;
+                std::cout << "request.parts[i].body: " << request.parts[i].body << std::endl;
+            }
         }
     }
 }
