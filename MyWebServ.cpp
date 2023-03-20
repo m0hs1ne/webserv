@@ -13,7 +13,8 @@
 
 void TheServer(std::vector<parsingConfig::server> servers);
 void SetUpSockets(std::vector<SocketConnection> &Sockets, std::vector<parsingConfig::server> servers, struct pollfd **fds);
-void NewConnectios_Handler(struct pollfd *fds, std::vector<parsingConfig::server> servers, std::vector<SocketConnection> &Sockets);
+void NewConnections_Handler(struct pollfd *fds, std::vector<parsingConfig::server> servers, std::vector<SocketConnection> &Sockets);
+void Established_connections_handler(std::vector<SocketConnection> &Sockets);
 
 #define MAX 5000
 
@@ -45,7 +46,8 @@ void TheServer(std::vector<parsingConfig::server> servers)
     SetUpSockets(Sockets, servers, &fds);
     while(true)
     {
-        NewConnectios_Handller(fds, servers, Sockets);
+        NewConnections_Handler(fds, servers, Sockets);
+        Established_connections_handler(Sockets);
     }
 
 }
@@ -84,18 +86,17 @@ void SetUpSockets(std::vector<SocketConnection> &Sockets, std::vector<parsingCon
         }
         std::cout << "Listening on port " << servers[i].port << std::endl;
         Sockets.push_back(Socket);
-        
         (*fds)[i].fd = Socket.socket_fd;
         (*fds)[i].events = POLLIN;
     }
 }
 
-void NewConnectios_Handler(struct pollfd *fds, std::vector<parsingConfig::server> servers, std::vector<SocketConnection> &Sockets)
+void NewConnections_Handler(struct pollfd *fds, std::vector<parsingConfig::server> servers, std::vector<SocketConnection> &Sockets)
 {
     int poll_return = 0;
-    int new_socket = 0;
-    ///char buffer[MAX];
-    poll_return = poll(fds, servers.size(), 500);
+    Connections new_socket;
+    poll_return = poll(fds, servers.size(), 1000);
+    std::cout << "waiting fot new connections" << std::endl;
     std::cout << poll_return << std::endl;
     if (poll_return < 0)
     {
@@ -110,31 +111,39 @@ void NewConnectios_Handler(struct pollfd *fds, std::vector<parsingConfig::server
         {   
             socklen_t len = sizeof(Sockets[i].addr);
             
-            new_socket = accept(Sockets[i].socket_fd, (sockaddr *)&Sockets[i].addr, &len);
+            new_socket.Connec_fd = accept(Sockets[i].socket_fd, (sockaddr *)&Sockets[i].addr, &len);
+            new_socket.is_write = 0;
+            fcntl(new_socket.Connec_fd, F_SETFL, O_NONBLOCK);
+            new_socket.is_read = 0;
             Sockets[i].connections.push_back(new_socket);
-            // if(recv(new_socket, buffer, sizeof(buffer), 0) == 0)
-            // {
-            //     std::cout << "Client waiting for response ...." << std::endl;
-            // }
-            // write(1, buffer, MAX);
-            // //close(new_socket);
-            // //exit(EXIT_FAILURE);
         }
     }
 }
 
 void Established_connections_handler(std::vector<SocketConnection> &Sockets)
 {
-    char buffer[MAX];
-    
-    for(size_t i = 0; i < Sockets.size(); i++)
-    {
-        for(size_t j = 0; j < Sockets[i].connections.size(); j++)
-        {
-            if(recv(Sockets[i].connections[j], buffer, sizeof(buffer), 0))
-            {
-                std::cout << "Client waiting for response ...." << std::endl;
-            }
-        }
-    }
+    // for(size_t i = 0; i < Sockets.size(); i++)
+    // {
+    //     for(size_t j = 0; j < Sockets[i].connections.size(); j++)
+    //     {
+    //         char buffer[1024] = {0};
+    //         int tmp = -2;
+            
+    //         if(Sockets[i].connections[j].is_read && (tmp = recv(Sockets[i].connections[j].Connec_fd, buffer, sizeof(buffer), 0)))
+    //         {
+    //             Sockets[i].connections[j].request.append(buffer);
+    //             std::cout << " --> "<< buffer << std::endl;
+    //         }
+    //         if(tmp == 0)
+    //         {
+    //             Sockets[i].connections[j].is_read = 0;
+    //             close(Sockets[i].connections[j].Connec_fd);
+    //             std::cout << "--> "<< Sockets[i].connections[j].request << std::endl;
+    //             exit(0);
+    //         }
+    //         if(!Sockets[i].connections[j].is_read && !Sockets[i].connections[j].is_write)
+    //             Sockets[i].connections[j].is_read = 1;
+    //         std::cout << "recv return --> "<< tmp << std::endl;
+    //     }
+    // }
 }

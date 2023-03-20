@@ -5,6 +5,15 @@
 # include <vector>
 #include <netinet/in.h>
 
+class Connections
+{
+    public:
+        std::string request;
+        bool is_read;
+        bool is_write;
+        int Connec_fd;
+};
+
 class SocketConnection
 {
     public:
@@ -13,6 +22,6 @@ class SocketConnection
         int socket_fd;
         int socket_port;
         struct sockaddr_in addr; // memset it // 0 '
-        std::vector<int> connections;
+        std::vector<Connections> connections;
 };
 
