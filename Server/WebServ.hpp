@@ -21,10 +21,12 @@ class WebServ
 	public:
 		void RunServer();
 		void SetUpSockets();
-		void NewConnections_Handler(struct kevent *revents, size_t kq_return);
-		void Established_connections_handler(struct kevent *revents, size_t kq_return);
+		int NewConnections_Handler(struct kevent *revents, size_t kq_return);
+		void Read_connections(struct kevent *revents, size_t kq_return);
+		void Answer_Connections();
 		void read_socket();
 		void write_socket();
+		int ready_to_read(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
 
 		WebServ(char *av);
 		// WebServ( WebServ const & src );
@@ -38,7 +40,7 @@ class WebServ
 		struct timespec timeout;
 		std::vector<parsingConfig::server> servers;
 		parsingConfig a(char *av);
-		
+		int Answer;
 
 };
 

@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 # include <sys/time.h>
 
+# define ANSWER 0
 
 class Connections
 {
