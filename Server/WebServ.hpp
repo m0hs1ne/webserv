@@ -27,7 +27,8 @@ class WebServ
 		void read_socket();
 		void write_socket();
 		int ready_to_read(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
-
+		void drop_clients();
+		void DeleteEvent(int fd);
 		WebServ(char *av);
 		// WebServ( WebServ const & src );
 		// ~WebServ();
