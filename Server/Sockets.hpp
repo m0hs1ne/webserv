@@ -5,6 +5,7 @@
 # include <vector>
 #include <netinet/in.h>
 # include <sys/time.h>
+#include "../includes/Response.hpp"
 
 # define ANSWER 0
 
@@ -12,8 +13,10 @@ class Connections
 {
     public:
         std::string request;
+        Response response;
         bool is_read;
         bool is_write;
+        bool drop_connection;
         uint64_t Connec_fd;
 };
 

@@ -61,19 +61,18 @@ void WebServ::RunServer()
             perror("failed");
             exit(1);
         }
-        // if (kq_return == 0)
-        // {
-        //     std::cout << "timed out\n"
-        //               << std::endl;
-        //     continue;
-        // }
+        if (kq_return == 0 && !this->Answer)
+        {
+            std::cout << "timed out\n"
+                      << std::endl;
+            continue;
+        }
         std::cout << "kq return --> " << kq_return << std::endl;
 
         if (NewConnections_Handler(revents, kq_return))
             continue;
         Read_connections(revents, kq_return);
         Answer_Connections();
-        // emxit(0);
     }
 }
 
@@ -134,10 +133,12 @@ int WebServ::NewConnections_Handler(struct kevent *revents, size_t kq_return)
                 new_socket.is_write = 0;
                 fcntl(new_socket.Connec_fd, F_SETFL, O_NONBLOCK);
                 new_socket.is_read = 0;
+                new_socket.is_write = 0;
+                new_socket.drop_connection = 0;
                 EV_SET(&event, new_socket.Connec_fd, EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, NULL);
                 kevent(this->kq, &event, 1, 0, 0, 0);
                 it->connections.push_back(new_socket);
-                std::cout << "loop\n";
+                this->Answer++;
                 return 1;
             }
         }
@@ -149,27 +150,26 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
 {
     std::vector<SocketConnection>::iterator it;
     std::vector<Connections>::iterator it2;
-    for (it = this->Sockets.begin(); it !=  this->Sockets.end(); it++)
-    { 
-        for (it2 = it->connections.begin(); it2 !=  it->connections.end(); it2++)
+    for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
+    {
+        for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
         {
             if (ready_to_read(revents, kq_return, it2->Connec_fd))
             {
-                std::cout << "Read Me\n" << std::endl;
+                std::cout << "Read Me\n"<< std::endl;
                 int ret;
                 char buffer[1024] = {0};
                 ret = recv(it2->Connec_fd, buffer, 1023, 0);
-                if(ret < 1023)
-                    this->Answer++;
+                if(ret == 0)
+                {
+                    close(it2->Connec_fd);
+                    break;;
+                }
+                if (ret < 1023)
+                    it2->is_write = true;
                 buffer[ret] = '\0';
                 it2->request.append(buffer);
             }
-            else
-            {
-                it2->is_write = true;
-                this->Answer++;
-            }
-            
         }
     }
 }
@@ -196,16 +196,17 @@ void WebServ::Answer_Connections()
 {
     std::vector<SocketConnection>::iterator it;
     std::vector<Connections>::iterator it2;
-    for (it = this->Sockets.begin(); it !=  this->Sockets.end(); it++)
+    for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
     {
-        for (it2 = it->connections.begin(); it2 !=  it->connections.end(); it2++)
+        for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
         {
             if (it2->is_write)
             {
+                //it2->response = handleRequest(it2->request, this->servers[0]);
+                std::cout << it2->request << std::endl;
+                //it2->response = dfg(fgh);
                 std::cout << "Answer Me" << std::endl;
                 it2->is_write = 0;
-                it->connections.erase(it2);
-                break;
             }
         }
     }
