@@ -12,6 +12,7 @@
 # include <netinet/in.h>
 # include <sys/time.h>
 # include <sys/event.h>
+# include <fstream>
 
 #define MAX 5000
 
@@ -23,7 +24,7 @@ class WebServ
 		void SetUpSockets();
 		int NewConnections_Handler(struct kevent *revents, size_t kq_return);
 		void Read_connections(struct kevent *revents, size_t kq_return);
-		void Answer_Connections();
+		void Answer_Connections(int fd, std::vector<Connections>::iterator it2);
 		void read_socket();
 		void write_socket();
 		int ready_to_read(struct kevent *revents, size_t kq_return, uint64_t socket_fd);

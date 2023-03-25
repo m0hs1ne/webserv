@@ -9,7 +9,7 @@ WebServ::WebServ(char *av)
     this->kq = kqueue();
     this->Answer = 0;
     this->servers = parsingConfig(av).getServers();
-    this->timeout.tv_sec = 1, this->timeout.tv_nsec = 0;
+    this->timeout.tv_sec = 1, this->timeout.tv_nsec = 100 * 500000;
 }
 
 // WebServ::WebServ( const WebServ & src )
@@ -72,7 +72,7 @@ void WebServ::RunServer()
         if (NewConnections_Handler(revents, kq_return))
             continue;
         Read_connections(revents, kq_return);
-        Answer_Connections();
+        //Answer_Connections();
         drop_clients();
         // exit(0);
     }
@@ -113,7 +113,7 @@ void WebServ::SetUpSockets()
         }
         std::cout << "Listening on port " << servers[i].port << std::endl;
         this->Sockets.push_back(Socket);
-        EV_SET(&event, Socket.socket_fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
+        EV_SET(&event, Socket.socket_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
         kevent(this->kq, &event, 1, 0, 0, 0);
     }
 }
@@ -128,16 +128,17 @@ int WebServ::NewConnections_Handler(struct kevent *revents, size_t kq_return)
         {
             if (revents[j].ident == it->socket_fd)
             {
-                struct kevent event[1];
+                struct kevent event[2];
                 Connections new_socket;
                 socklen_t len = sizeof(it->addr);
                 new_socket.Connec_fd = accept(it->socket_fd, (sockaddr *)&it->addr, &len);
                 fcntl(new_socket.Connec_fd, F_SETFL, O_NONBLOCK);
-                new_socket.is_read = 0;
+                new_socket.is_read = 1;
                 new_socket.is_write = 0;
                 new_socket.drop_connection = 0;
-                EV_SET(event, new_socket.Connec_fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
-                kevent(this->kq, event, 1, 0, 0, 0);
+                EV_SET(&event[0], new_socket.Connec_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+                EV_SET(&event[1], new_socket.Connec_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, NULL);
+                kevent(this->kq, event, 2, 0, 0, 0);
                 it->connections.push_back(new_socket);
                 this->Answer++;
                 return 1;
@@ -155,27 +156,44 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
     {
         for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
         {
-            int tmp;
+            int tmp = 0;
             if ((tmp = ready_to_read(revents, kq_return, it2->Connec_fd)))
             {
                 int ret;
                 char buffer[1024] = {0};
-                ret = recv(it2->Connec_fd, buffer, 1023, 0);
-                if(ret == 0)
+                ret = read(it2->Connec_fd, buffer, 1023);
+                revents[tmp - 1].data -= ret;
+                if(revents[tmp - 1].data <= 0 )
                 {
-                    it2->drop_connection = 1;
-                    close(it2->Connec_fd);
+                    std::cout << "Read is end --> " << revents[tmp - 1].data << std::endl;
                     exit(0);
                 }
-                std::cout << ret << std::endl;
-                if (ret < 1023 && ret >= tmp)
-                {   
-                    std::cout << "read size :" << ret << std::endl;
-                    it2->is_write = true;
-                }
-                buffer[ret] = '\0';
-                it2->request.append(buffer);
+                //std::cout << "read : "<<  ret << std::endl;
+                //exit(0);
+                // if(ret < 0)
+                //     exit(1);
+                // else if(ret == 0)
+                //     exit(1);
+                // else if(ret == 0)
+                // {
+                //     std::cout << "read ends\n" << std::endl;
+                //     exit(1);
+                // }
+                
+
+                // else
+                // {
+                //     std::cout <<"ret : " << ret << std::endl;
+                //     buffer[ret] = '\0';
+                //     it2->request.append(buffer);
+                // }
             }
+            else if(tmp == 2)
+            {
+                Answer_Connections(it2->Connec_fd, it2);
+            }
+            else 
+                exit(0);
         }
     }
 }
@@ -186,37 +204,38 @@ int WebServ::ready_to_read(struct kevent *revents, size_t kq_return, uint64_t so
     {
         if (revents[i].ident == socket_fd)
         {
-            std::cout << "size -> " << revents[i].data << std::endl;
             if (revents[i].filter == EVFILT_READ)
-                return revents[i].data;
-            else
             {
-                std::cout << "No Event Occured" << std::endl;
-                exit(0);
+                std::cout << "to read :" << revents[i].data << std::endl;
+                return i + 1;
             }
         }
     }
     return 0;
 }
 
-void WebServ::Answer_Connections()
+void WebServ::Answer_Connections(int fd, std::vector<Connections>::iterator it2)
 {
-    std::vector<SocketConnection>::iterator it;
-    std::vector<Connections>::iterator it2;
-    for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
-    {
-        for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
-        {
-            if (it2->is_write)
-            {
+    (void)fd;
+    // std::vector<SocketConnection>::iterator it;
+    // std::vector<Connections>::iterator it2;
+    // for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
+    // {
+    //     for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
+    //     {
+    //         if (it2->is_write)
+    //         {
+                std::ofstream file("request");
+                //std::cout << it2->request << std::endl;
+                file.write(it2->request.c_str(), it2->request.size());
                 //it2->response = handleRequest(it2->request, this->servers[0]);
-                std::cout << it2->request << std::endl;
+               // std::cout << sizeof(it2->request) << std::endl;
                 std::cout << "Answer Me" << std::endl;
                 write(it2->Connec_fd, it2->request.c_str(), it2->request.size());
                 it2->drop_connection = 1;
-            }
-        }
-    }
+    //         }
+    //     }
+    // }
 }
 
 void WebServ::drop_clients()
@@ -233,6 +252,7 @@ void WebServ::drop_clients()
                 close(it2->Connec_fd);
                 it2 = it->connections.erase(it2);
                 this->Answer--;
+
             }
             else
                 it2++;
@@ -242,9 +262,10 @@ void WebServ::drop_clients()
 
 void WebServ::DeleteEvent(int fd)
 {
-    struct kevent event[1];
-    EV_SET(event, fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-    kevent(this->kq, event, 1, 0, 0, 0);
+    struct kevent event[2];
+    EV_SET(&event[0], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
+    EV_SET(&event[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
+    kevent(this->kq, event, 2, 0, 0, 0);
 }
 
 
