@@ -1,4 +1,5 @@
 #include "../../includes/handlingPost.hpp"
+#include "../../includes/handlingCGI.hpp"
 
 void parseMultiPart(std::string part, Request &request)
 {
@@ -32,6 +33,13 @@ void handlingPost(Request request, Response &response, Server &server)
     std::string body;
     std::string uploadPath;
 
+    if (server.locations[response.location].upload_enable && !server.locations[response.location].cgi_path.empty())
+    {
+        response.code = 500;
+        std::cerr << "Error: CGI and Upload conflict." << std::endl;
+        return;
+    }
+
     if (server.locations[response.location].upload_enable)
     {
         if (!server.locations[response.location].upload_path.empty())
@@ -54,10 +62,17 @@ void handlingPost(Request request, Response &response, Server &server)
             }
         }
     }
+    else if (!server.locations[response.location].cgi_path.empty())
+    {
+        checkCGI(request, response, server);
+        return;
+    }
     else
     {
-        response.code = 405;
-        response.body = "upload_enable is false";
+        if (!server.locations[response.location].upload_enable)
+            response.code = 405;
+        else
+            response.code = 403;
         return;
     }
 
@@ -84,7 +99,6 @@ void handlingPost(Request request, Response &response, Server &server)
             if (!files[i].empty())
                 parseMultiPart(files[i], request);
         }
-        std::cout << "request.parts.size(): " << request.parts.size() << std::endl;
         for (size_t i = 0; i < request.parts.size(); i++)
         {
             if (!request.parts[i].filename.empty())
@@ -95,11 +109,8 @@ void handlingPost(Request request, Response &response, Server &server)
                 ofs.close();
             }
             else
-            {
                 request.data[request.parts[i].name] = request.parts[i].body;
-                std::cout << "request.parts[i].name: " << request.parts[i].name << std::endl;
-                std::cout << "request.parts[i].body: " << request.parts[i].body << std::endl;
-            }
         }
     }
+    response.code = 201;
 }

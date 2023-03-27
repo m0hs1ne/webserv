@@ -35,4 +35,5 @@ std::string itos(size_t n);
 std::string toUpper(std::string str);
 int isDir(const char *pathname);
 std::string urlDecodeStr(std::string str);
+void freeCharArray(char** charArray);
 #endif

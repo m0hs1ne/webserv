@@ -180,3 +180,11 @@ int isDir(const char *pathname)
     else
         return 0;
 }
+
+void freeCharArray(char** charArray) {
+    for (int i = 0; charArray[i]; i++) {
+        delete[] charArray[i];
+    }
+
+    delete[] charArray;
+}

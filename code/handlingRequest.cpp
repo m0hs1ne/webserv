@@ -256,7 +256,8 @@ void checkRedirection(Response &response, Server &server, Request request)
         response.code = 301;
         response.returnFile = server.locations[response.location].return_pages;
     }
-    else if (!server.locations[response.location].index.empty())
+    else if (!server.locations[response.location].index.empty() &&
+            response.returnFile.empty())
     {
         response.code = 200;
         response.returnFile = server.locations[response.location].index;
