@@ -13,6 +13,7 @@
 # include <sys/time.h>
 # include <sys/event.h>
 # include <fstream>
+# include <string>
 
 #define MAX 5000
 
@@ -27,9 +28,14 @@ class WebServ
 		void Answer_Connections(int fd, std::vector<Connections>::iterator it2);
 		void read_socket();
 		void write_socket();
-		int ready_to_read(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
+		int is_readable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
+		int is_writable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
+		void Get_ContentSize(std::string buffer, std::vector<Connections>::iterator it2);
 		void drop_clients();
+
+
 		void DeleteEvent(int fd);
+		void AddEvent(int fd, int16_t filter, uint16_t flag);
 		WebServ(char *av);
 		// WebServ( WebServ const & src );
 		// ~WebServ();

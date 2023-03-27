@@ -13,10 +13,13 @@ class Connections
 {
     public:
         std::string request;
+        std::string header; 
         Response response;
         bool is_read;
         bool is_write;
+        long long  content_size;
         bool drop_connection;
+        size_t data_s;
         uint64_t Connec_fd;
 };
 

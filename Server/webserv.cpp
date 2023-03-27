@@ -61,14 +61,12 @@ void WebServ::RunServer()
             perror("failed");
             exit(1);
         }
-        if (kq_return == 0 && !this->Answer)
+        if (kq_return == 0)
         {
-            std::cout << "timed out\n"
-                      << std::endl;
+            std::cout << "timed out\n" << std::endl;
             continue;
         }
         std::cout << "kq return --> " << kq_return << std::endl;
-        //std::cout << "fd---> " << revents[0].ident << std::endl;
         if (NewConnections_Handler(revents, kq_return))
             continue;
         Read_connections(revents, kq_return);
@@ -136,6 +134,8 @@ int WebServ::NewConnections_Handler(struct kevent *revents, size_t kq_return)
                 new_socket.is_read = 1;
                 new_socket.is_write = 0;
                 new_socket.drop_connection = 0;
+                new_socket.data_s = 0;
+                new_socket.content_size = 0;
                 EV_SET(&event[0], new_socket.Connec_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
                 EV_SET(&event[1], new_socket.Connec_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, NULL);
                 kevent(this->kq, event, 2, 0, 0, 0);
@@ -156,87 +156,76 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
     {
         for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
         {
-            int tmp = 0;
-            if ((tmp = ready_to_read(revents, kq_return, it2->Connec_fd)))
+            if (is_readable(revents, kq_return, it2->Connec_fd))
             {
-                int ret;
-                char buffer[1024] = {0};
-                ret = read(it2->Connec_fd, buffer, 1023);
-                revents[tmp - 1].data -= ret;
-                if(revents[tmp - 1].data <= 0 )
-                {
-                    std::cout << "Read is end --> " << revents[tmp - 1].data << std::endl;
-                    exit(0);
-                }
-                //std::cout << "read : "<<  ret << std::endl;
-                //exit(0);
-                // if(ret < 0)
-                //     exit(1);
-                // else if(ret == 0)
-                //     exit(1);
-                // else if(ret == 0)
-                // {
-                //     std::cout << "read ends\n" << std::endl;
-                //     exit(1);
-                // }
+                //std::cout << "Hi\n";
+                int ret = 0;
+                char buffer[2048] = {0};
+                ret = read(it2->Connec_fd, buffer, 2047);
+                buffer[ret] = '\0';
                 
-
-                // else
-                // {
-                //     std::cout <<"ret : " << ret << std::endl;
-                //     buffer[ret] = '\0';
-                //     it2->request.append(buffer);
-                // }
+                if(it2->request.empty())
+                    Get_ContentSize(buffer, it2);
+                it2->content_size -= ret;
+                std::cout << it2->content_size << std::endl;
+                if(it2->content_size <= 0)
+                {
+                    std::cout << "here\n";
+                    AddEvent(it2->Connec_fd, EVFILT_READ, EV_DELETE);
+                    AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_ENABLE);
+                }   
             }
-            else if(tmp == 2)
+            else if(is_writable(revents, kq_return, it2->Connec_fd))
             {
-                Answer_Connections(it2->Connec_fd, it2);
+                write(it2->Connec_fd, "Hello", 5);
+                close(it2->Connec_fd);
+                AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_DELETE);
+                it2->drop_connection = 1;
+                std::cout << "Answer \n" << std::endl;
             }
-            else 
-                exit(0);
         }
     }
 }
 
-int WebServ::ready_to_read(struct kevent *revents, size_t kq_return, uint64_t socket_fd)
+int WebServ::is_readable(struct kevent *revents, size_t kq_return, uint64_t socket_fd)
 {
     for (size_t i = 0; i < kq_return; i++)
     {
         if (revents[i].ident == socket_fd)
         {
             if (revents[i].filter == EVFILT_READ)
-            {
-                std::cout << "to read :" << revents[i].data << std::endl;
-                return i + 1;
-            }
+                return 1;
         }
     }
-    return 0;
+    return 0; 
 }
 
-void WebServ::Answer_Connections(int fd, std::vector<Connections>::iterator it2)
+int WebServ::is_writable(struct kevent *revents, size_t kq_return, uint64_t socket_fd)
 {
-    (void)fd;
-    // std::vector<SocketConnection>::iterator it;
-    // std::vector<Connections>::iterator it2;
-    // for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
-    // {
-    //     for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
-    //     {
-    //         if (it2->is_write)
-    //         {
-                std::ofstream file("request");
-                //std::cout << it2->request << std::endl;
-                file.write(it2->request.c_str(), it2->request.size());
-                //it2->response = handleRequest(it2->request, this->servers[0]);
-               // std::cout << sizeof(it2->request) << std::endl;
-                std::cout << "Answer Me" << std::endl;
-                write(it2->Connec_fd, it2->request.c_str(), it2->request.size());
-                it2->drop_connection = 1;
-    //         }
-    //     }
-    // }
+    for (size_t i = 0; i < kq_return; i++)
+    {
+        if (revents[i].ident == socket_fd)
+        {
+            if (revents[i].filter == EVFILT_WRITE)
+                return 1;
+        }
+    }
+    return 0; 
 }
+
+void WebServ::Get_ContentSize(std::string buffer, std::vector<Connections>::iterator it2)
+{
+    std::string Con_Len;
+    size_t pos = buffer.find("Content-Length: ");
+    if (pos != std::string::npos)
+    {
+        pos += 16;
+        size_t end = buffer.find("\r\n", pos);
+        Con_Len = buffer.substr(pos, end - pos);
+        it2->content_size = std::stoi(Con_Len);
+    }
+}
+
 
 void WebServ::drop_clients()
 {
@@ -247,13 +236,7 @@ void WebServ::drop_clients()
         for (it2 = it->connections.begin(); it2 != it->connections.end(); )
         {
             if (it2->drop_connection)
-            {
-                DeleteEvent(it2->Connec_fd);
-                close(it2->Connec_fd);
                 it2 = it->connections.erase(it2);
-                this->Answer--;
-
-            }
             else
                 it2++;
         }
@@ -268,6 +251,14 @@ void WebServ::DeleteEvent(int fd)
     kevent(this->kq, event, 2, 0, 0, 0);
 }
 
+void WebServ::AddEvent(int fd, int16_t filter, uint16_t flag)
+{
+    struct kevent event;
+    EV_SET(&event, fd, filter, flag, 0, 0, NULL);
+    int err = kevent(this->kq, &event, 1, 0, 0, 0);
+    if (err == -1)
+        std::cout << "An error occured\n";
+}
 
 /*
 ** --------------------------------- ACCESSOR ---------------------------------
