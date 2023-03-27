@@ -63,14 +63,15 @@ void WebServ::RunServer()
         }
         if (kq_return == 0)
         {
-            std::cout << "timed out\n" << std::endl;
+            std::cout << "timed out\n"
+                      << std::endl;
             continue;
         }
         std::cout << "kq return --> " << kq_return << std::endl;
         if (NewConnections_Handler(revents, kq_return))
             continue;
         Read_connections(revents, kq_return);
-        //Answer_Connections();
+        // Answer_Connections();
         drop_clients();
         // exit(0);
     }
@@ -131,8 +132,6 @@ int WebServ::NewConnections_Handler(struct kevent *revents, size_t kq_return)
                 socklen_t len = sizeof(it->addr);
                 new_socket.Connec_fd = accept(it->socket_fd, (sockaddr *)&it->addr, &len);
                 fcntl(new_socket.Connec_fd, F_SETFL, O_NONBLOCK);
-                new_socket.is_read = 1;
-                new_socket.is_write = 0;
                 new_socket.drop_connection = 0;
                 new_socket.data_s = 0;
                 new_socket.content_size = 0;
@@ -158,30 +157,52 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
         {
             if (is_readable(revents, kq_return, it2->Connec_fd))
             {
-                //std::cout << "Hi\n";
                 int ret = 0;
+                if (access("vedio.mp4", F_OK))
+                    this->file.open("vedio.mp4", std::ios::binary | std::ios::app);
                 char buffer[2048] = {0};
                 ret = read(it2->Connec_fd, buffer, 2047);
                 buffer[ret] = '\0';
-                
-                if(it2->request.empty())
-                    Get_ContentSize(buffer, it2);
-                it2->content_size -= ret;
-                std::cout << it2->content_size << std::endl;
-                if(it2->content_size <= 0)
+                if (it2->header.empty())
                 {
-                    std::cout << "here\n";
+                    it2->header.append(buffer);
+                    if (RequestType(it2->header) == "POST")
+                        Get_ContentSize(buffer, it2);
+                    else
+                        it2->content_size = 0;
+                }
+                else
+                {          
+                    
+                    // exit(0);
+                    this->file.write(buffer, ret);
+                    it2->content_size -= ret;
+                    std::cout << it2->content_size << std::endl;
+                }
+                
+                // it2->Body.append(buffer);
+                // std::cout << it2->Body << std::endl;
+                // exit(0);
+                // std::cout << it2->content_size << std::endl;
+                if (it2->content_size <= 0)
+                {
                     AddEvent(it2->Connec_fd, EVFILT_READ, EV_DELETE);
                     AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_ENABLE);
-                }   
+                }
+                // outfile.close();
             }
-            else if(is_writable(revents, kq_return, it2->Connec_fd))
+            else if (is_writable(revents, kq_return, it2->Connec_fd))
             {
+                // if()
+                // it2->response = handleRequest(it2->request, this->servers[0]);
                 write(it2->Connec_fd, "Hello", 5);
-                close(it2->Connec_fd);
                 AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_DELETE);
+                close(it2->Connec_fd);
                 it2->drop_connection = 1;
-                std::cout << "Answer \n" << std::endl;
+                std::cout << "Answer \n"
+                          << std::endl;
+                // std::cout << it2->Body << std::endl;
+                exit(1);
             }
         }
     }
@@ -197,7 +218,7 @@ int WebServ::is_readable(struct kevent *revents, size_t kq_return, uint64_t sock
                 return 1;
         }
     }
-    return 0; 
+    return 0;
 }
 
 int WebServ::is_writable(struct kevent *revents, size_t kq_return, uint64_t socket_fd)
@@ -210,7 +231,7 @@ int WebServ::is_writable(struct kevent *revents, size_t kq_return, uint64_t sock
                 return 1;
         }
     }
-    return 0; 
+    return 0;
 }
 
 void WebServ::Get_ContentSize(std::string buffer, std::vector<Connections>::iterator it2)
@@ -226,14 +247,13 @@ void WebServ::Get_ContentSize(std::string buffer, std::vector<Connections>::iter
     }
 }
 
-
 void WebServ::drop_clients()
 {
     std::vector<SocketConnection>::iterator it;
     std::vector<Connections>::iterator it2;
     for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
     {
-        for (it2 = it->connections.begin(); it2 != it->connections.end(); )
+        for (it2 = it->connections.begin(); it2 != it->connections.end();)
         {
             if (it2->drop_connection)
                 it2 = it->connections.erase(it2);
@@ -260,6 +280,10 @@ void WebServ::AddEvent(int fd, int16_t filter, uint16_t flag)
         std::cout << "An error occured\n";
 }
 
+std::string WebServ::RequestType(std::string buffer)
+{
+    return buffer.substr(0, 4);
+}
 /*
 ** --------------------------------- ACCESSOR ---------------------------------
 */

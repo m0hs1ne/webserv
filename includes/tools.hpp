@@ -23,6 +23,7 @@ public:
         return msg.c_str();
     }
 };
+std::vector<std::string> splitString(std::string str, std::string  delimiter);
 std::string readFile(const std::string &file);
 std::string dToh(size_t d);
 size_t countLines(std::string src);
@@ -33,4 +34,5 @@ size_t sToI(const std::string &str);
 std::string itos(size_t n);
 std::string toUpper(std::string str);
 int isDir(const char *pathname);
+std::string urlDecodeStr(std::string str);
 #endif

@@ -1,4 +1,4 @@
- #include "../includes/tools.hpp"
+#include "../includes/tools.hpp"
 
 static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
@@ -13,6 +13,51 @@ size_t countLines(std::string src)
             ++lines;
     }
     return lines;
+}
+
+std::string urlDecodeStr(std::string str)
+{
+    std::ostringstream decoded;
+    std::string rslt;
+
+    for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
+    {
+        if (*it == '%')
+        {
+            std::istringstream hex_string(std::string(it + 1, it + 3));
+            int hex_value = 0;
+            hex_string >> std::hex >> hex_value;
+
+            decoded << static_cast<char>(hex_value);
+            it += 2;
+        }
+        else if (*it == '+')
+        {
+            decoded << ' ';
+        }
+        else
+        {
+            decoded << *it;
+        }
+    }
+    rslt = decoded.str();
+    return rslt;
+}
+
+bool locationFind(std::string path, std::string location)
+{
+    size_t i = 0;
+    size_t notFound = 0;
+
+    while (path[i] && location[i])
+    {
+        if (path[i] != location[i])
+            notFound = 1;
+        ++i;
+    }
+    if (location[i] == '\0' && !notFound)
+        return true;
+    return false;
 }
 
 std::string dToh(size_t d)
@@ -61,6 +106,19 @@ std::string getLine(std::string src, size_t n)
     while (j > 0 && std::isspace(src[i + j - 1]))
         --j;
     return (std::string(src, i, j));
+}
+
+std::vector<std::string> splitString( std::string str,  std::string delimiter) {
+    std::vector<std::string> tokens;
+    size_t start = 0;
+    size_t end = str.find(delimiter);
+    while (end != std::string::npos) {
+        tokens.push_back(str.substr(start, end - start));
+        start = end + delimiter.length();
+        end = str.find(delimiter, start);
+    }
+    tokens.push_back(str.substr(start));
+    return tokens;
 }
 
 std::vector<std::string> split(std::string str, char c, int stop)
