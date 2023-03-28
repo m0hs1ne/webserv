@@ -37,12 +37,6 @@ WebServ::WebServ(char *av)
 // 	return *this;
 // }
 
-// std::ostream &			operator<<( std::ostream & o, WebServ const & i )
-// {
-// 	//o << "Value = " << i.getValue();
-// 	return o;
-// }
-
 /*
 ** --------------------------------- METHODS ----------------------------------
 */
@@ -158,50 +152,37 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
             if (is_readable(revents, kq_return, it2->Connec_fd))
             {
                 int ret = 0;
-                if (access("vedio.mp4", F_OK))
-                    this->file.open("vedio.mp4", std::ios::binary | std::ios::app);
                 char buffer[2048] = {0};
                 ret = read(it2->Connec_fd, buffer, 2047);
                 buffer[ret] = '\0';
-                if (it2->header.empty())
+                if (it2->request.method.empty())
+                    it2->request.handleRequest(buffer, this->servers[0]);
+                if (it2->request.method == "POST")
                 {
-                    it2->header.append(buffer);
-                    if (RequestType(it2->header) == "POST")
-                        Get_ContentSize(buffer, it2);
-                    else
-                        it2->content_size = 0;
-                }
-                else
-                {          
-                    
-                    // exit(0);
-                    this->file.write(buffer, ret);
-                    it2->content_size -= ret;
-                    std::cout << it2->content_size << std::endl;
-                }
-                
-                // it2->Body.append(buffer);
-                // std::cout << it2->Body << std::endl;
-                // exit(0);
-                // std::cout << it2->content_size << std::endl;
+                    std::cout << "POST" << std::endl;
+                } // POST
+                else if (it2->request.method == "GET")
+                {
+                    std::cout << "GET" << std::endl;
+                } // GET
+                else if (it2->request.method == "DELETE")
+                {
+                    std::cout << "DELETE" << std::endl;
+                } // DELETE
                 if (it2->content_size <= 0)
                 {
                     AddEvent(it2->Connec_fd, EVFILT_READ, EV_DELETE);
                     AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_ENABLE);
                 }
-                // outfile.close();
             }
             else if (is_writable(revents, kq_return, it2->Connec_fd))
             {
-                // if()
-                // it2->response = handleRequest(it2->request, this->servers[0]);
                 write(it2->Connec_fd, "Hello", 5);
                 AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_DELETE);
                 close(it2->Connec_fd);
                 it2->drop_connection = 1;
                 std::cout << "Answer \n"
                           << std::endl;
-                // std::cout << it2->Body << std::endl;
                 exit(1);
             }
         }
@@ -234,18 +215,6 @@ int WebServ::is_writable(struct kevent *revents, size_t kq_return, uint64_t sock
     return 0;
 }
 
-void WebServ::Get_ContentSize(std::string buffer, std::vector<Connections>::iterator it2)
-{
-    std::string Con_Len;
-    size_t pos = buffer.find("Content-Length: ");
-    if (pos != std::string::npos)
-    {
-        pos += 16;
-        size_t end = buffer.find("\r\n", pos);
-        Con_Len = buffer.substr(pos, end - pos);
-        it2->content_size = std::stoi(Con_Len);
-    }
-}
 
 void WebServ::drop_clients()
 {
@@ -263,13 +232,7 @@ void WebServ::drop_clients()
     }
 }
 
-void WebServ::DeleteEvent(int fd)
-{
-    struct kevent event[2];
-    EV_SET(&event[0], fd, EVFILT_READ, EV_DELETE, 0, 0, NULL);
-    EV_SET(&event[1], fd, EVFILT_WRITE, EV_DELETE, 0, 0, NULL);
-    kevent(this->kq, event, 2, 0, 0, 0);
-}
+
 
 void WebServ::AddEvent(int fd, int16_t filter, uint16_t flag)
 {
@@ -280,10 +243,6 @@ void WebServ::AddEvent(int fd, int16_t filter, uint16_t flag)
         std::cout << "An error occured\n";
 }
 
-std::string WebServ::RequestType(std::string buffer)
-{
-    return buffer.substr(0, 4);
-}
 /*
 ** --------------------------------- ACCESSOR ---------------------------------
 */

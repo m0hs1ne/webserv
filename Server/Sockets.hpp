@@ -5,8 +5,8 @@
 # include <vector>
 #include <netinet/in.h>
 # include <sys/time.h>
-#include "../includes/Response.hpp"
-// # include <fstream>
+#include "Response.hpp"
+#include "Request.hpp"
 # include <fstream>
 
 # define ANSWER 0
@@ -14,14 +14,12 @@
 class Connections
 {
     public:
-        std::string Body;
-        std::string header; 
-        Response response;
+       //Response response;
+        Request request; 
         long long  content_size;
         bool drop_connection;
         size_t data_s;
         uint64_t Connec_fd;
-        // std::ofstream file(NULL);
 };
 
 class SocketConnection

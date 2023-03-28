@@ -1,6 +1,6 @@
-#include "../../includes/handlingGet.hpp"
+// #include "../../includes/handlingGet.hpp"
 #include <dirent.h>
-#include "../../includes/Autoindex.hpp"
+// #include "../../includes/Autoindex.hpp"
 #include "../../includes/tools.hpp"
 
 void setEnv(Response response, Request request, Server &server)

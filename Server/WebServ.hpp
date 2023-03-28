@@ -4,8 +4,8 @@
 # include <iostream>
 # include <string>
 # include "Sockets.hpp" // Sockets Header
-# include "../includes/handlingRequest.hpp"
-# include "../includes/handlingConfig.hpp" // parsing Header
+# include "ParsingConfig.hpp"
+# include "Request.hpp" // parsing Header
 # include <sys/socket.h>
 # include <cstdio>
 # include <unistd.h>
@@ -18,9 +18,9 @@
 
 #define MAX 5000
 
+
 class WebServ
 {
-
 	public:
 		void RunServer();
 		void SetUpSockets();
@@ -31,9 +31,7 @@ class WebServ
 		void write_socket();
 		int is_readable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
 		int is_writable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
-		void Get_ContentSize(std::string buffer, std::vector<Connections>::iterator it2);
 		void drop_clients();
-		std::string RequestType(std::string buffer);
 		void DeleteEvent(int fd);
 		void AddEvent(int fd, int16_t filter, uint16_t flag);
 		WebServ(char *av);

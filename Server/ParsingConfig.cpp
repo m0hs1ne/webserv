@@ -1,4 +1,4 @@
-#include "../includes/handlingConfig.hpp"
+#include "ParsingConfig.hpp"
 
 std::string parsingConfig::readFile(const std::string &file)
 {

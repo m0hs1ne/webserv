@@ -1,7 +1,7 @@
 #ifndef AUTOINDEX_HPP
 #define AUTOINDEX_HPP
 
-#include "handlingRequest.hpp"
+//#include "handlingRequest.hpp"
 #include <dirent.h>
 
 class AutoIndex
