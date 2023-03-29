@@ -18,7 +18,8 @@ CYAN		=	\033[0;96m
 WHITE		=	\033[0;97m
 
 
-SRC = webserv/server.cpp parseConfig.cpp handleRequest.cpp tools.cpp
+SRC = Server/main.cpp Server/webserv.cpp server/ParsingConfig.cpp Server/Request.cpp Server/Response.cpp code/tools.cpp \
+	code/GetMethod/handlingGet.cpp code/GetMethod/Autoindex.cpp 
 
 all:		$(NAME)
 
