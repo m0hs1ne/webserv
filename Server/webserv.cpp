@@ -44,6 +44,7 @@ WebServ::WebServ(char *av)
 void WebServ::RunServer()
 {
     SetUpSockets();
+    signal(SIGPIPE, SIG_IGN);
     while (true)
     {
         size_t kq_return = 0;
@@ -125,7 +126,7 @@ int WebServ::NewConnections_Handler(struct kevent *revents, size_t kq_return)
                 Connections new_socket;
                 socklen_t len = sizeof(it->addr);
                 new_socket.Connec_fd = accept(it->socket_fd, (sockaddr *)&it->addr, &len);
-                fcntl(new_socket.Connec_fd, F_SETFL, O_NONBLOCK);
+                // fcntl(new_socket.Connec_fd, F_SETFL, O_NONBLOCK);
                 new_socket.drop_connection = 0;
                 new_socket.data_s = 0;
                 new_socket.content_size = 0;
@@ -145,6 +146,8 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
 {
     std::vector<SocketConnection>::iterator it;
     std::vector<Connections>::iterator it2;
+    std::map<int, std::string> *code = new std::map<int, std::string>;
+    initHttpCode(*code);
     for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
     {
         for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
@@ -153,13 +156,18 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
             {
                 int ret = 0;
                 char buffer[2048] = {0};
+                it2->server = &this->servers[0];
                 ret = read(it2->Connec_fd, buffer, 2047);
                 buffer[ret] = '\0';
                 if (it2->request.method.empty())
-                    it2->request.handleRequest(buffer, this->servers[0]);
+                {
+                        it2->response.codeMsg = code;
+                        it2->response = it2->request.handleRequest(buffer, this->servers[0]);
+                }
                 if (it2->request.method == "POST")
                 {
-                    std::cout << "POST" << std::endl;
+                    handlingPost(*it2);
+                    std::cout << "response body --> " << it2->response.body << std::endl;
                 } // POST
                 else if (it2->request.method == "GET")
                 {
@@ -177,16 +185,17 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
             }
             else if (is_writable(revents, kq_return, it2->Connec_fd))
             {
-                write(it2->Connec_fd, "Hello", 5);
+                
+                write(it2->Connec_fd, (it2->response.response + it2->response.body).c_str(), it2->response.response.size() + it2->response.body.size());
                 AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_DELETE);
                 close(it2->Connec_fd);
                 it2->drop_connection = 1;
                 std::cout << "Answer \n"
                           << std::endl;
-                exit(1);
             }
         }
     }
+    delete code;
 }
 
 int WebServ::is_readable(struct kevent *revents, size_t kq_return, uint64_t socket_fd)

@@ -3,9 +3,9 @@
 // #include "../includes/handlingDelete.hpp"
 // #include "../includes/handlingPost.hpp"
 #include "Request.hpp"
-# include "../includes/tools.hpp"
 
 std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=._~!*'():;%@+$,/?#[]' '";
+
 
 bool Request::urlDecode(Response &response)
 {
@@ -158,6 +158,7 @@ bool Request::matchLocation(Response &response, Server &server)
     response.location = location;
     checkPathFound(response, server);
     checkRedirection(response, server);
+    
     return true;
 }
 
@@ -181,7 +182,8 @@ void Request::checkRedirection(Response &response, Server &server)
         response.code = 301;
         response.returnFile = server.locations[response.location].return_pages;
     }
-    else if (!server.locations[response.location].index.empty())
+    else if (!server.locations[response.location].index.empty() &&
+            response.returnFile.empty())
     {
         response.code = 200;
         response.returnFile = server.locations[response.location].index;
@@ -205,36 +207,20 @@ Response Request::handleRequest(std::string buffer, Server &server)
 {
     Response *response = new Response();
     Response resp; 
-    initHttpCode();
     fillRequest(buffer);
     if (isRequestWellFormed(*response, server) &&
         urlDecode(*response) &&
         matchLocation(*response, server) &&
         methodAllowed(*response, server))
-    {}
+    {
+
+    }
+    resp = *response;
     delete response;
     return resp;
 }
 
-void Request::initHttpCode()
-{
-    if (!code.size())
-    {
-        code[501] = "501 Not Implemented";
-        code[500] = "500 Internal Server Error";
-        code[414] = "414 Request-URI Too Long";
-        code[413] = "413 Request Entity Too Large";
-        code[409] = "409 Conflict";
-        code[405] = "405 Method Not Allowed";
-        code[404] = "404 Not Found";
-        code[403] = "403 Forbidden";
-        code[400] = "400 Bad Request";
-        code[301] = "301 Moved Permanently";
-        code[204] = "204 No Content";
-        code[201] = "201 Created";
-        code[200] = "200 OK";
-    }
-}
+
 
 // void formGetResponse(Response &response, Server &server)
 // {

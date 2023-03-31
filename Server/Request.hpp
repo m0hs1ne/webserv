@@ -16,9 +16,6 @@ typedef struct Part
     std::string body;
 } Part;
 
-class Response;
-std::map<int, std::string> code;
-
 class Request
 {
     public:
@@ -43,7 +40,6 @@ class Request
         bool urlDecode(Response &response);
 
         Response handleRequest(std::string buffer, Server &server);
-		void initHttpCode();
 
         Request(){};
         // Request(const Request &other){

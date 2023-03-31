@@ -3,10 +3,12 @@
 
 # include <iostream>
 # include <string>
+
 # include "Sockets.hpp" // Sockets Header
 # include "ParsingConfig.hpp"
 # include "Request.hpp" // parsing Header
 #include "../includes/handlingGet.hpp"
+#include "../includes/handlingPost.hpp"
 # include <sys/socket.h>
 # include <cstdio>
 # include <unistd.h>

@@ -2,6 +2,8 @@
 
 static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
+// extern std::map<int, std::string> code;
+
 size_t countLines(std::string src)
 {
     size_t i = 0;
@@ -13,6 +15,26 @@ size_t countLines(std::string src)
             ++lines;
     }
     return lines;
+}
+
+void initHttpCode(std::map<int, std::string> &code)
+{
+    if (!code.size())
+    {
+        code[501] = "501 Not Implemented";
+        code[500] = "500 Internal Server Error";
+        code[414] = "414 Request-URI Too Long";
+        code[413] = "413 Request Entity Too Large";
+        code[409] = "409 Conflict";
+        code[405] = "405 Method Not Allowed";
+        code[404] = "404 Not Found";
+        code[403] = "403 Forbidden";
+        code[400] = "400 Bad Request";
+        code[301] = "301 Moved Permanently";
+        code[204] = "204 No Content";
+        code[201] = "201 Created";
+        code[200] = "200 OK";
+    }
 }
 
 std::string setContentType(std::string path)
@@ -63,6 +85,14 @@ std::string setContentType(std::string path)
     else
         type = "text/plain";
     return type;
+}
+
+void freeCharArray(char** charArray) {
+    for (int i = 0; charArray[i]; i++) {
+        delete[] charArray[i];
+    }
+
+    delete[] charArray;
 }
 
 std::string urlDecodeStr(std::string str)

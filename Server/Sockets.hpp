@@ -5,7 +5,6 @@
 # include <vector>
 #include <netinet/in.h>
 # include <sys/time.h>
-#include "Response.hpp"
 #include "Request.hpp"
 # include <fstream>
 
