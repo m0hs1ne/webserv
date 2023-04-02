@@ -1,10 +1,10 @@
 
 #include "../../includes/handlingDelete.hpp"
-#include <dirent.h>
 
 typedef struct parsingConfig::server Server;
 void handleFile(Response &response,std::string path)
 {
+    std::cout << "path: " << path << std::endl;
     int result = unlink(path.c_str());
     if (result == 0)
         response.code = 204;
@@ -53,10 +53,10 @@ void handleDir(Response &response)
     closedir(dir);
 }
 
-void handlingDelete(Response &response)
+void handlingDelete(Connections &connection)
 {
-    if (isDir(response.fullPath.c_str()) == -1)
-        handleDir(response);
-    else if (!isDir(response.fullPath.c_str()))
-        handleFile(response, response.fullPath);
+    if (isDir(connection.response.fullPath.c_str()) == -1)
+        handleDir(connection.response);
+    else if (!isDir(connection.response.fullPath.c_str()))
+        handleFile(connection.response, connection.response.fullPath);
 }

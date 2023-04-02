@@ -29,6 +29,10 @@ class Request
         size_t size;
         std::vector<Part> parts;
         std::map<std::string, std::string> data;
+        bool ok;
+        bool ended;
+        int openedFd;
+        std::string fileName;
 
         typedef struct parsingConfig::server Server;
         void fillRequest(const std::string &buffer);
@@ -41,7 +45,10 @@ class Request
 
         Response handleRequest(std::string buffer, Server &server);
 
-        Request(){};
+        Request(): openedFd(-2)
+        {
+            this->fileName = generateRandomString();
+        };
         // Request(const Request &other){
         //     (void)other;
         // };

@@ -20,6 +20,7 @@ WHITE		=	\033[0;97m
 
 SRC = Server/main.cpp Server/webserv.cpp server/ParsingConfig.cpp Server/Request.cpp Server/Response.cpp code/tools.cpp \
 	code/GetMethod/handlingGet.cpp code/GetMethod/Autoindex.cpp  code/handlingCgi/handlingCGI.cpp code/PostMethod/handlingPost.cpp \
+	code/DeleteMethod/handlingDelete.cpp
 
 all:		$(NAME)
 

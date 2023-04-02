@@ -159,24 +159,28 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
                 it2->server = &this->servers[0];
                 ret = read(it2->Connec_fd, buffer, 2047);
                 buffer[ret] = '\0';
+                     std::cout << "buffer -->"<< buffer << std::endl;
                 if (it2->request.method.empty())
                 {
                         it2->response.codeMsg = code;
                         it2->response = it2->request.handleRequest(buffer, this->servers[0]);
                 }
-                if (it2->request.method == "POST")
+                if (it2->request.ok)
                 {
-                    handlingPost(*it2);
-                    std::cout << "response body --> " << it2->response.body << std::endl;
-                } // POST
-                else if (it2->request.method == "GET")
-                {
-                    handlingGet(*it2);
-                } // GET
-                else if (it2->request.method == "DELETE")
-                {
-                    std::cout << "DELETE" << std::endl;
-                } // DELETE
+                    if (it2->request.method == "POST")
+                    {
+                        handlingPost(*it2);
+                    } // POST
+                    else if (it2->request.method == "GET")
+                    {
+                        handlingGet(*it2);
+                    } // GET
+                    else if (it2->request.method == "DELETE")
+                    {
+                        handlingDelete(*it2);
+                    } // DELETE
+                }
+                it2->response.formResponse(it2->request.method, *(it2->server));
                 if (it2->content_size <= 0)
                 {
                     AddEvent(it2->Connec_fd, EVFILT_READ, EV_DELETE);
@@ -185,7 +189,10 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
             }
             else if (is_writable(revents, kq_return, it2->Connec_fd))
             {
-                
+                char buffer1[5000] = {0};
+                read(it2->response.fileFD,buffer1 , 5000);
+                it2->response.body += buffer1;
+                it2->response.response += "Content-Length: " + itos(it2->response.body.size()) + "\r\n\r\n";
                 write(it2->Connec_fd, (it2->response.response + it2->response.body).c_str(), it2->response.response.size() + it2->response.body.size());
                 AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_DELETE);
                 close(it2->Connec_fd);

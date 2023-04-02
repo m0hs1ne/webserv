@@ -4,6 +4,33 @@ static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
 // extern std::map<int, std::string> code;
 
+size_t sToi(const std::string &str)
+{
+    size_t value;
+    std::istringstream convert(str);
+
+    if (!(convert >> value))
+        std::cerr << "Error: not a number" << std::endl;
+    if (value < 0)
+        std::cerr << "Error: negative number" << std::endl;
+    return value;
+}
+
+std::string generateRandomString()
+{
+    srand(time(NULL));
+    int length = rand() % 10 + 5;
+
+    std::string random_string = "";
+    for (int i = 0; i < length; i++)
+    {
+        char random_char = 'a' + rand() % 26;
+        random_string += random_char;
+    }
+
+    return random_string;
+}
+
 size_t countLines(std::string src)
 {
     size_t i = 0;
@@ -87,8 +114,10 @@ std::string setContentType(std::string path)
     return type;
 }
 
-void freeCharArray(char** charArray) {
-    for (int i = 0; charArray[i]; i++) {
+void freeCharArray(char **charArray)
+{
+    for (int i = 0; charArray[i]; i++)
+    {
         delete[] charArray[i];
     }
 
@@ -188,11 +217,13 @@ std::string getLine(std::string src, size_t n)
     return (std::string(src, i, j));
 }
 
-std::vector<std::string> splitString( std::string str,  std::string delimiter) {
+std::vector<std::string> splitString(std::string str, std::string delimiter)
+{
     std::vector<std::string> tokens;
     size_t start = 0;
     size_t end = str.find(delimiter);
-    while (end != std::string::npos) {
+    while (end != std::string::npos)
+    {
         tokens.push_back(str.substr(start, end - start));
         start = end + delimiter.length();
         end = str.find(delimiter, start);
@@ -243,7 +274,7 @@ bool isMethodValid(const std::string &method)
 
 std::string toUpper(std::string str)
 {
-    for(size_t i = 0; i < str.size(); i++)
+    for (size_t i = 0; i < str.size(); i++)
     {
         str[i] = std::toupper(str[i]);
     }

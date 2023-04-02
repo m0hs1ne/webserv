@@ -9,6 +9,7 @@
 # include "Request.hpp" // parsing Header
 #include "../includes/handlingGet.hpp"
 #include "../includes/handlingPost.hpp"
+#include "../includes/handlingDelete.hpp"
 # include <sys/socket.h>
 # include <cstdio>
 # include <unistd.h>

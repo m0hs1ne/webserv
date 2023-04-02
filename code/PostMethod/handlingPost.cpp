@@ -23,8 +23,13 @@ void parseMultiPart(std::string part, Request &request)
     if (part.find("\n\n") != std::string::npos)
         Part.body = part.substr(part.find("\n\n") + 2);
     request.parts.push_back(Part);
+
 }
 
+void fillFile(Connections &connection)
+{
+    write(connection.request.openedFd, connection.request.body.c_str(), connection.request.body.size());
+}
 void handlingPost(Connections &connection)
 {
     std::string contentType;
@@ -32,20 +37,37 @@ void handlingPost(Connections &connection)
     std::string body;
     std::string uploadPath;
 
+
+    if (connection.server->locations[connection.response.location].upload_enable && !connection.server->locations[connection.response.location].cgi_path.empty())
+    {
+        connection.response.code = 500;
+        std::cerr << "Error: CGI and Upload conflict." << std::endl;
+        return;
+    }
+
+    if(connection.request.ended)
+    {
+        close(connection.request.openedFd);
+        return;
+    }
+    else if(connection.request.openedFd != -2)
+        fillFile(connection);
+
     if (connection.server->locations[connection.response.location].upload_enable)
     {
         if (!connection.server->locations[connection.response.location].upload_path.empty())
         {
-            uploadPath = connection.server->locations[connection.response.location].root + connection.server->locations[connection.response.location].upload_path;
+            uploadPath = connection.response.root + connection.server->locations[connection.response.location].upload_path;
             if (uploadPath[uploadPath.size() - 1] == '/')
                 uploadPath.erase(uploadPath.size() - 1, 1);
         }
         else
         {
-            uploadPath = connection.server->locations[connection.response.location].root + "/uploads";
+            uploadPath = connection.response.root + "/uploads";
         }
         if (access(uploadPath.c_str(), F_OK) == -1)
         {
+
             int status = mkdir(uploadPath.c_str(), 0777);
             if (status == -1)
             {
@@ -54,9 +76,17 @@ void handlingPost(Connections &connection)
             }
         }
     }
+    else if (!connection.server->locations[connection.response.location].cgi_path.empty())
+    {
+        checkCGI(connection.request, connection.response, *(connection.server));
+        return;
+    }
     else
     {
-        connection.response.code = 405;
+        if (!connection.server->locations[connection.response.location].upload_enable)
+            connection.response.code = 405;
+        else
+            connection.response.code = 403;
         return;
     }
 
@@ -77,13 +107,14 @@ void handlingPost(Connections &connection)
         std::string boundary = contentType.substr(contentType.find("boundary=") + 9);
         std::vector<std::string> files;
         files = splitString(connection.request.body, "--" + boundary);
-
         for (size_t i = 0; i < files.size(); i++)
         {
+            std::cout << "files[" << i << "]: " << files[i] << std::endl;
             if (!files[i].empty())
+            {
                 parseMultiPart(files[i], connection.request);
+            }
         }
-        std::cout << "request.parts.size(): " << connection.request.parts.size() << std::endl;
         for (size_t i = 0; i < connection.request.parts.size(); i++)
         {
             if (!connection.request.parts[i].filename.empty())
@@ -94,12 +125,20 @@ void handlingPost(Connections &connection)
                 ofs.close();
             }
             else
-            {
                 connection.request.data[connection.request.parts[i].name] = connection.request.parts[i].body;
-                std::cout << "request.parts[i].name: " << connection.request.parts[i].name << std::endl;
-                std::cout << "request.parts[i].body: " << connection.request.parts[i].body << std::endl;
-            }
         }
     }
-    connection.response.formResponse(connection.request.method, *(connection.server));
+    else
+    {
+        connection.request.openedFd = open(connection.request.fileName.c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
+        if (connection.request.openedFd == -1)
+        {
+            connection.response.code = 500;
+            connection.request.ended = true;
+            return;
+        }
+        write(connection.request.openedFd, connection.request.body.c_str(), connection.request.body.size());
+        return;
+    }
+    connection.response.code = 201;
 }
