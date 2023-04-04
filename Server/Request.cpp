@@ -104,7 +104,6 @@ bool Request::isRequestWellFormed(Response &response, Server &server)
                 response.code = 400;
         }
     }
-    // we need to check if the request body size is bigger than the client_max_body_size
     else if (this->attr.find("Content-Length") != this->attr.end() &&
              sToi(this->attr["Content-Length"]) > server.client_max_body_size)
         response.code = 413;
@@ -172,10 +171,7 @@ void Request::checkPathFound(Response &response, Server &server)
     if (response.fullPath[response.fullPath.size() - 1] != '/' && !access(response.fullPath.c_str(), R_OK))
         response.returnFile = response.fullPath;
     else
-    {
-        response.returnFile = "404";
         response.code = 404;
-    }
     
 }
 
@@ -188,7 +184,8 @@ void Request::checkRedirection(Response &response, Server &server)
         response.returnFile = server.locations[response.location].return_pages;
     }
     else if (!server.locations[response.location].index.empty() &&\
-             response.returnFile.empty())
+             response.returnFile.empty() &&\
+            response.fullPath[response.fullPath.size() - 1] == '/')
     {
         response.code = 200;
         response.returnFile = response.root + server.locations[response.location].index;
@@ -202,6 +199,8 @@ bool Request::methodAllowed(Response &response, Server &server)
 
     for (; it != server.locations[response.location].methods.end(); it++)
     {
+        std::cout << "method: " << *it << std::endl;
+        std::cout << "this->method: " << this->method << std::endl;
         if (toUpper(*it) == toUpper(this->method))
             return true;
     }

@@ -36,6 +36,7 @@ void checkCGI(Request request, Response &response, Server &server)
     std::string cgiExts = server.locations[response.location].cgi_extension[0];
     std::string cgiPaths = server.locations[response.location].cgi_path;
     int pipefd[2];
+    int postBodyfd[2];
     pid_t pid;
     char buffer[2048];
     char *const args[] = {(char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL};
@@ -45,6 +46,16 @@ void checkCGI(Request request, Response &response, Server &server)
     {
         std::cerr << "Error creating pipe\n";
         return;
+    }
+    if (request.method == "POST")
+    {
+        if (pipe(postBodyfd) == -1)
+        {
+            std::cerr << "Error creating pipe\n";
+            return;
+        }
+        write(postBodyfd[1], request.body.c_str(), request.body.size());
+        close(postBodyfd[1]);
     }
     envp = setEnv(response, request, server);
     pid = fork();
@@ -58,11 +69,21 @@ void checkCGI(Request request, Response &response, Server &server)
     if (pid == 0)
     {
         close(pipefd[0]);
+        if (request.method == "POST")
+        {
+            if (dup2(postBodyfd[0], STDIN_FILENO) == -1)
+            {
+                std::cerr << "Error redirecting standard input\n";
+                return;
+            }
+        }
         if (dup2(pipefd[1], STDOUT_FILENO) == -1)
         {
             std::cerr << "Error redirecting standard output\n";
             return;
         }
+        read(0, buffer, sizeof(buffer));
+        std::cerr << "+++++body: " << buffer << std::endl;
         if (execve(cgiPaths.c_str(), args, envp) == -1)
         {
             std::cerr << "Error executing command\n";

@@ -28,7 +28,8 @@ Response& Response::operator=(const Response& other)
 }
 
 void formPostResponse(Response &response, Server &server)
-{;
+{
+    std::cout << "vfdbdfb --> " << response.code << std::endl;
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
 
@@ -44,9 +45,7 @@ void formPostResponse(Response &response, Server &server)
     response.response = "HTTP/1.1 ";
     response.response += (*response.codeMsg)[response.code] + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
-    response.response += "Content-Length: " + itos(response.body.size()) + "\r\n";
     response.response += "Content-Type: text/html\r\n";
-    response.response += "\r\n";
 }
 
 void formDeleteResponse(Response &response, Server &server)
@@ -71,12 +70,13 @@ void formGetResponse(Response &response, Server &server)
     std::string type = setContentType(response.returnFile);
     if (response.body.empty() &&
         response.redirect.empty() &&
-        (response.returnFile.empty() || response.code == 404 || access(response.returnFile.c_str(), R_OK)))
+        (response.returnFile.empty()|| response.code == 404 || access(response.returnFile.c_str(), R_OK)))
         response.body = (*response.codeMsg)[response.code];
-    else if (response.body.empty() && (!response.returnFile.empty() || response.code == 404))
+    else if (response.body.empty() && !response.returnFile.empty())
         response.fileFD = open(response.returnFile.c_str(), O_RDONLY);
     response.response = "HTTP/1.1 ";
     response.response += (*response.codeMsg)[response.code] + "\r\n";
+    // response.response += "Content-Length: " + itos(response.body.size()) + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
     if (response.redirect.empty())
     {
