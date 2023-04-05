@@ -3,10 +3,8 @@
 // #include "../includes/handlingDelete.hpp"
 // #include "../includes/handlingPost.hpp"
 #include "Request.hpp"
-# include "../includes/tools.hpp"
 
 std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=._~!*'():;%@+$,/?#[]' '";
-std::map<int, std::string> code;
 
 bool Request::urlDecode(Response &response)
 {
@@ -45,56 +43,6 @@ bool Request::urlDecode(Response &response)
     return true;
 }
 
-std::string Request::setContentType(std::string path)
-{
-    std::string type;
-
-    if (path.empty())
-    {
-        type = "text/html";
-        return type;
-    }
-
-    std::string ext = path.substr(path.find_last_of(".") + 1);
-    if (ext == "html" || ext == "php")
-        type = "text/html";
-    else if (ext == "jpg" || ext == "jpeg")
-        type = "image/jpeg";
-    else if (ext == "png")
-        type = "image/png";
-    else if (ext == "gif")
-        type = "image/gif";
-    else if (ext == "css")
-        type = "text/css";
-    else if (ext == "js")
-        type = "application/javascript";
-    else if (ext == "json")
-        type = "application/json";
-    else if (ext == "txt")
-        type = "text/plain";
-    else if (ext == "xml")
-        type = "text/xml";
-    else if (ext == "pdf")
-        type = "application/pdf";
-    else if (ext == "zip")
-        type = "application/zip";
-    else if (ext == "gz")
-        type = "application/gzip";
-    else if (ext == "mp3")
-        type = "audio/mpeg";
-    else if (ext == "mp4")
-        type = "video/mp4";
-    else if (ext == "avi")
-        type = "video/x-msvideo";
-    else if (ext == "svg")
-        type = "image/svg+xml";
-    else if (ext == "ico")
-        type = "image/x-icon";
-    else
-        type = "text/plain";
-    return type;
-}
-
 void fillPostBody(std::string buffer, Request &req, int line)
 {
     std::vector<std::string> splitArr;
@@ -112,8 +60,6 @@ void fillPostBody(std::string buffer, Request &req, int line)
 
 void Request::fillRequest(const std::string &buffer)
 {
-    // Request *req = new Request;
-    // Request request;
     std::vector<std::string> splitArr;
     int i;
 
@@ -136,6 +82,8 @@ void Request::fillRequest(const std::string &buffer)
         this->attr[splitArr[0]] = splitArr[1];
         line = getLine(buffer, i);
     }
+    if (this->method == "POST")
+        fillPostBody(buffer, *this, i);
 }
 
 bool Request::isRequestWellFormed(Response &response, Server &server)
@@ -156,8 +104,8 @@ bool Request::isRequestWellFormed(Response &response, Server &server)
                 response.code = 400;
         }
     }
-    // we need to check if the request body size is bigger than the client_max_body_size
-    else if (this->size > server.client_max_body_size)
+    else if (this->attr.find("Content-Length") != this->attr.end() &&
+             sToi(this->attr["Content-Length"]) > server.client_max_body_size)
         response.code = 413;
     return (response.code == 200);
 }
@@ -186,6 +134,7 @@ bool Request::matchLocation(Response &response, Server &server)
         splitLocation.clear();
         i++;
     }
+        std::cout << "location: " << location << std::endl;
     if (location == -1)
     {
         for (size_t i = 0; i < server.locations.size(); i++)
@@ -203,12 +152,12 @@ bool Request::matchLocation(Response &response, Server &server)
             return false;
         }
     }
-    else
+    else if(this->path != server.locations[location].name)
         this->path = this->path.substr(server.locations[location].name.size());
-    std::cout << this->path << "  |  " << server.locations[location].name << std::endl;
     response.location = location;
     checkPathFound(response, server);
     checkRedirection(response, server);
+
     return true;
 }
 
@@ -223,19 +172,24 @@ void Request::checkPathFound(Response &response, Server &server)
         response.returnFile = response.fullPath;
     else
         response.code = 404;
+    
 }
 
 void Request::checkRedirection(Response &response, Server &server)
 {
+    std::cout << "***code: " << response.code << std::endl;
     if (!server.locations[response.location].return_pages.empty())
     {
         response.code = 301;
         response.returnFile = server.locations[response.location].return_pages;
     }
-    else if (!server.locations[response.location].index.empty())
+    else if (!server.locations[response.location].index.empty() &&\
+             response.returnFile.empty() &&\
+            response.fullPath[response.fullPath.size() - 1] == '/')
     {
         response.code = 200;
-        response.returnFile = server.locations[response.location].index;
+        response.returnFile = response.root + server.locations[response.location].index;
+
     }
 }
 
@@ -245,45 +199,42 @@ bool Request::methodAllowed(Response &response, Server &server)
 
     for (; it != server.locations[response.location].methods.end(); it++)
     {
+        std::cout << "method: " << *it << std::endl;
+        std::cout << "this->method: " << this->method << std::endl;
         if (toUpper(*it) == toUpper(this->method))
             return true;
     }
+    response.code = 405;
     return false;
 }
 
-
 Response Request::handleRequest(std::string buffer, Server &server)
 {
-    Response *response = new Response();
-    Response resp; 
-    initHttpCode();
-    fillRequest(buffer);
-    if (isRequestWellFormed(*response, server) &&
-        urlDecode(*response) &&
-        matchLocation(*response, server) &&
-        methodAllowed(*response, server))
-    {}
-    delete response;
-    return resp;
-}
-
-void Request::initHttpCode()
-{
-    if (!code.size())
+    if (this->openedFd == -2)
     {
-        code[501] = "501 Not Implemented";
-        code[500] = "500 Internal Server Error";
-        code[414] = "414 Request-URI Too Long";
-        code[413] = "413 Request Entity Too Large";
-        code[409] = "409 Conflict";
-        code[405] = "405 Method Not Allowed";
-        code[404] = "404 Not Found";
-        code[403] = "403 Forbidden";
-        code[400] = "400 Bad Request";
-        code[301] = "301 Moved Permanently";
-        code[204] = "204 No Content";
-        code[201] = "201 Created";
-        code[200] = "200 OK";
+        Response *response = new Response();
+        Response resp;
+        fillRequest(buffer);
+        std::cout << "----========== " << this->path << std::endl;
+        this->ok = false;
+        if (isRequestWellFormed(*response, server) &&
+            urlDecode(*response) &&
+            matchLocation(*response, server) &&
+            methodAllowed(*response, server))
+        {
+            this->ok = true;
+        }
+        resp = *response;
+        delete response;
+        return resp;
+    }
+    else
+    {
+        this->method = "POST";
+        this->body = buffer;
+        Response response;
+        response.code = 200;
+        return response;
     }
 }
 
@@ -316,19 +267,6 @@ void Request::initHttpCode()
 //         response.response += "Location: " + response.redirect + "\r\n";
 //         response.response += "\r\n";
 //     }
-// }
-
-// void formDeleteResponse(Response &response, Server &server)
-// {
-//     if (server.error_pages.find(response.code) != server.error_pages.end())
-//         response.returnFile = server.error_pages[response.code];
-//     else
-//         response.body = code[response.code];
-//     response.response = "HTTP/1.1 ";
-//     response.response += code[response.code] + "\r\n";
-//     response.response += "Server: " + server.names[0] + "\r\n";
-//     response.response += "Content-Length: 0\r\n";
-//     response.response += "\r\n";
 // }
 
 // void formPostResponse(Response &response, Server &server)

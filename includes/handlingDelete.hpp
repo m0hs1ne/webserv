@@ -1,8 +1,8 @@
 #ifndef DELETE_HPP
 #define DELETE_HPP
-#include "handlingRequest.hpp"
+#include "../Server/Sockets.hpp"
 #include <cstdio>
+#include <dirent.h>
 
-void handlingDelete(Response &response);
-
+void handlingDelete(SocketConnection &connection);
 #endif

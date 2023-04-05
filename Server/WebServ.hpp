@@ -3,9 +3,13 @@
 
 # include <iostream>
 # include <string>
+
 # include "Sockets.hpp" // Sockets Header
 # include "ParsingConfig.hpp"
 # include "Request.hpp" // parsing Header
+#include "../includes/handlingGet.hpp"
+#include "../includes/handlingPost.hpp"
+#include "../includes/handlingDelete.hpp"
 # include <sys/socket.h>
 # include <cstdio>
 # include <unistd.h>
@@ -24,9 +28,9 @@ class WebServ
 	public:
 		void RunServer();
 		void SetUpSockets();
-		int NewConnections_Handler(struct kevent *revents, size_t kq_return);
-		void Read_connections(struct kevent *revents, size_t kq_return);
-		void Answer_Connections(int fd, std::vector<Connections>::iterator it2);
+		int AcceptNewConnections(SocketConnection *Socket);
+		void HandleEstablishedConnections(SocketConnection *Connection, int16_t  filter);
+		int CheckEvents(struct kevent *revents, size_t kq_return);
 		void read_socket();
 		void write_socket();
 		int is_readable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);

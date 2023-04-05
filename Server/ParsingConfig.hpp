@@ -83,4 +83,6 @@ private:
     std::vector<server> servers;
 
 };
+typedef parsingConfig::server Server;
+
 #endif

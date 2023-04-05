@@ -1,8 +1,6 @@
 #ifndef GET_HPP
 #define GET_HPP
-#include "handlingRequest.hpp"
+#include "../Server/Sockets.hpp"
 
-
-void handlingGet(Request request, Response &response, Server &server);
-
+void handlingGet(SocketConnection &connection);
 #endif

@@ -2,6 +2,35 @@
 
 static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
+// extern std::map<int, std::string> code;
+
+size_t sToi(const std::string &str)
+{
+    size_t value;
+    std::istringstream convert(str);
+
+    if (!(convert >> value))
+        std::cerr << "Error: not a number" << std::endl;
+    if (value < 0)
+        std::cerr << "Error: negative number" << std::endl;
+    return value;
+}
+
+std::string generateRandomString()
+{
+    srand(time(NULL));
+    int length = rand() % 10 + 5;
+
+    std::string random_string = "";
+    for (int i = 0; i < length; i++)
+    {
+        char random_char = 'a' + rand() % 26;
+        random_string += random_char;
+    }
+
+    return random_string;
+}
+
 size_t countLines(std::string src)
 {
     size_t i = 0;
@@ -13,6 +42,86 @@ size_t countLines(std::string src)
             ++lines;
     }
     return lines;
+}
+
+void initHttpCode(std::map<int, std::string> &code)
+{
+    if (!code.size())
+    {
+        code[501] = "501 Not Implemented";
+        code[500] = "500 Internal Server Error";
+        code[414] = "414 Request-URI Too Long";
+        code[413] = "413 Request Entity Too Large";
+        code[409] = "409 Conflict";
+        code[405] = "405 Method Not Allowed";
+        code[404] = "404 Not Found";
+        code[403] = "403 Forbidden";
+        code[400] = "400 Bad Request";
+        code[301] = "301 Moved Permanently";
+        code[204] = "204 No Content";
+        code[201] = "201 Created";
+        code[200] = "200 OK";
+    }
+}
+
+std::string setContentType(std::string path)
+{
+    std::string type;
+
+    if (path.empty())
+    {
+        type = "text/html";
+        return type;
+    }
+
+    std::string ext = path.substr(path.find_last_of(".") + 1);
+    if (ext == "html" || ext == "php")
+        type = "text/html";
+    else if (ext == "jpg" || ext == "jpeg")
+        type = "image/jpeg";
+    else if (ext == "png")
+        type = "image/png";
+    else if (ext == "gif")
+        type = "image/gif";
+    else if (ext == "css")
+        type = "text/css";
+    else if (ext == "js")
+        type = "application/javascript";
+    else if (ext == "json")
+        type = "application/json";
+    else if (ext == "txt")
+        type = "text/plain";
+    else if (ext == "xml")
+        type = "text/xml";
+    else if (ext == "pdf")
+        type = "application/pdf";
+    else if (ext == "zip")
+        type = "application/zip";
+    else if (ext == "gz")
+        type = "application/gzip";
+    else if (ext == "mp3")
+        type = "audio/mpeg";
+    else if (ext == "mp4")
+        type = "video/mp4";
+    else if (ext == "avi")
+        type = "video/x-msvideo";
+    else if (ext == "svg")
+        type = "image/svg+xml";
+    else if (ext == "ico")
+        type = "image/x-icon";
+    else
+        type = "text/plain";
+    return type;
+}
+
+void freeCharArray(char **charArray)
+{
+    for (int i = 0; charArray[i]; i++)
+    {
+        delete[] charArray[i];
+    }
+
+    delete[] charArray;
 }
 
 std::string urlDecodeStr(std::string str)
@@ -108,11 +217,13 @@ std::string getLine(std::string src, size_t n)
     return (std::string(src, i, j));
 }
 
-std::vector<std::string> splitString( std::string str,  std::string delimiter) {
+std::vector<std::string> splitString(std::string str, std::string delimiter)
+{
     std::vector<std::string> tokens;
     size_t start = 0;
     size_t end = str.find(delimiter);
-    while (end != std::string::npos) {
+    while (end != std::string::npos)
+    {
         tokens.push_back(str.substr(start, end - start));
         start = end + delimiter.length();
         end = str.find(delimiter, start);
@@ -163,7 +274,7 @@ bool isMethodValid(const std::string &method)
 
 std::string toUpper(std::string str)
 {
-    for(size_t i = 0; i < str.size(); i++)
+    for (size_t i = 0; i < str.size(); i++)
     {
         str[i] = std::toupper(str[i]);
     }

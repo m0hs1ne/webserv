@@ -10,6 +10,8 @@
 #include <cstdlib>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctime>
+
 
 class parsingException : public std::exception
 {
@@ -23,6 +25,9 @@ public:
         return msg.c_str();
     }
 };
+// static std::map<int, std::string> code;
+
+std::string setContentType(std::string path);
 std::vector<std::string> splitString(std::string str, std::string  delimiter);
 std::string readFile(const std::string &file);
 std::string dToh(size_t d);
@@ -30,9 +35,13 @@ size_t countLines(std::string src);
 std::string getLine(std::string src, size_t n);
 std::vector<std::string> split(std::string str, char c, int stop);
 bool isMethodValid(const std::string &method);
-size_t sToI(const std::string &str);
+size_t sToi(const std::string &str);
 std::string itos(size_t n);
 std::string toUpper(std::string str);
 int isDir(const char *pathname);
 std::string urlDecodeStr(std::string str);
+void freeCharArray(char** charArray);
+void initHttpCode(std::map<int, std::string> &code);
+std::string generateRandomString();
+
 #endif

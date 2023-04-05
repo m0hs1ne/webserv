@@ -3,6 +3,9 @@
 
 //#include "handlingRequest.hpp"
 #include <dirent.h>
+#include <iostream>
+#include <string>
+#include <sstream>
 
 class AutoIndex
 {
