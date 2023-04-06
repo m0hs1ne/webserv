@@ -29,19 +29,12 @@ Response& Response::operator=(const Response& other)
 
 void formPostResponse(Response &response, Server &server)
 {
-    std::cout << "vfdbdfb --> " << response.code << std::endl;
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
-
     if (response.body.empty() && response.returnFile.empty())
-    {
         response.body = (*response.codeMsg)[response.code];
-    }
     else if (response.body.empty() && !response.returnFile.empty())
-    {
-        std::cout << "return file: " << response.returnFile << std::endl;
         response.body = readFile(response.returnFile);
-    }
     response.response = "HTTP/1.1 ";
     response.response += (*response.codeMsg)[response.code] + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
@@ -64,7 +57,6 @@ void formDeleteResponse(Response &response, Server &server)
 
 void formGetResponse(Response &response, Server &server)
 {
-    std::cout << "vfdbdfb --> " << response.code << std::endl;
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
     std::string type = setContentType(response.returnFile);
@@ -72,8 +64,12 @@ void formGetResponse(Response &response, Server &server)
         response.redirect.empty() &&
         (response.returnFile.empty()|| response.code == 404 || access(response.returnFile.c_str(), R_OK)))
         response.body = (*response.codeMsg)[response.code];
-    else if (response.body.empty() && !response.returnFile.empty())
-        response.fileFD = open(response.returnFile.c_str(), O_RDONLY);
+    else if (response.body.empty() && !response.returnFile.empty() && isDir(response.returnFile.c_str()) != -1)
+    {
+        response.fileFD = open(response.returnFile.c_str(), O_RDWR);
+        if(response.fileFD < 0)
+            response.code = 500;
+    }
     response.response = "HTTP/1.1 ";
     response.response += (*response.codeMsg)[response.code] + "\r\n";
     // response.response += "Content-Length: " + itos(response.body.size()) + "\r\n";
@@ -97,8 +93,6 @@ void Response::formResponse(std::string method, Server &server)
         formPostResponse(*this, server);
     else if (method == "DELETE")
         formDeleteResponse(*this, server);
-    std::cout << "\\\\\\\\\\" << this->code << std::endl;
-
 }
 
 Response::~Response(){}

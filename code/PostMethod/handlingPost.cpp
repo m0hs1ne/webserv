@@ -130,7 +130,7 @@ void handlingPost(Connections &connection)
     }
     else
     {
-        connection.request.openedFd = open(connection.request.fileName.c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
+        connection.request.openedFd = open((uploadPath+ "/" + connection.request.fileName).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
         if (connection.request.openedFd == -1)
         {
             connection.response.code = 500;
@@ -138,6 +138,7 @@ void handlingPost(Connections &connection)
             return;
         }
         write(connection.request.openedFd, connection.request.body.c_str(), connection.request.body.size());
+        connection.response.code = 201;
         return;
     }
     connection.response.code = 201;

@@ -33,6 +33,7 @@ class Request
         bool ended;
         int openedFd;
         std::string fileName;
+        int i;
 
         typedef struct parsingConfig::server Server;
         void fillRequest(const std::string &buffer);
@@ -47,7 +48,7 @@ class Request
 
         Request(): openedFd(-2)
         {
-            this->fileName = generateRandomString();
+            this->fileName = "file_" + generateRandomString();
         };
         // Request(const Request &other){
         //     (void)other;

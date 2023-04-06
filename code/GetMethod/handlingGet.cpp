@@ -58,9 +58,6 @@ void handleLocation(Connections &connection)
 
 void handlingGet(Connections &connection)
 {
-
-
-
     if (isLocation(connection))
         handleLocation(connection);
     else if (isDir(connection.response.fullPath.c_str()) == -1)

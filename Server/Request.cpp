@@ -134,7 +134,6 @@ bool Request::matchLocation(Response &response, Server &server)
         splitLocation.clear();
         i++;
     }
-        std::cout << "location: " << location << std::endl;
     if (location == -1)
     {
         for (size_t i = 0; i < server.locations.size(); i++)
@@ -177,7 +176,6 @@ void Request::checkPathFound(Response &response, Server &server)
 
 void Request::checkRedirection(Response &response, Server &server)
 {
-    std::cout << "***code: " << response.code << std::endl;
     if (!server.locations[response.location].return_pages.empty())
     {
         response.code = 301;
@@ -199,8 +197,6 @@ bool Request::methodAllowed(Response &response, Server &server)
 
     for (; it != server.locations[response.location].methods.end(); it++)
     {
-        std::cout << "method: " << *it << std::endl;
-        std::cout << "this->method: " << this->method << std::endl;
         if (toUpper(*it) == toUpper(this->method))
             return true;
     }
@@ -215,7 +211,6 @@ Response Request::handleRequest(std::string buffer, Server &server)
         Response *response = new Response();
         Response resp;
         fillRequest(buffer);
-        std::cout << "----========== " << this->path << std::endl;
         this->ok = false;
         if (isRequestWellFormed(*response, server) &&
             urlDecode(*response) &&

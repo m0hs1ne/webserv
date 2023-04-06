@@ -62,7 +62,6 @@ void WebServ::RunServer()
                       << std::endl;
             continue;
         }
-        std::cout << "kq return --> " << kq_return << std::endl;
         if (NewConnections_Handler(revents, kq_return))
             continue;
         Read_connections(revents, kq_return);
@@ -158,6 +157,12 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
                 char buffer[2048] = {0};
                 it2->server = &this->servers[0];
                 ret = read(it2->Connec_fd, buffer, 2047);
+                if(ret == 0)
+                {
+                    close(it2->Connec_fd);
+                    it2->drop_connection = 1;
+                    continue;
+                }
                 buffer[ret] = '\0';
                      std::cout << "buffer -->"<< buffer << std::endl;
                 if (it2->request.method.empty())
@@ -189,9 +194,12 @@ void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
             }
             else if (is_writable(revents, kq_return, it2->Connec_fd))
             {
+                std::cout << "writing" << std::endl;
                 char buffer1[5000] = {0};
-                read(it2->response.fileFD,buffer1 , 5000);
+                read(it2->response.fileFD,buffer1 , 4998);
+                buffer1[4999] = '\0';
                 it2->response.body += buffer1;
+                std::cout << "body -->" << it2->response.body << std::endl;
                 it2->response.response += "Content-Length: " + itos(it2->response.body.size()) + "\r\n\r\n";
                 write(it2->Connec_fd, (it2->response.response + it2->response.body).c_str(), it2->response.response.size() + it2->response.body.size());
                 AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_DELETE);
