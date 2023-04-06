@@ -28,7 +28,30 @@ void parseMultiPart(std::string part, Request &request)
 
 void fillFile(Connections &connection)
 {
-    write(connection.request.openedFd, connection.request.body.c_str(), connection.request.body.size());
+    std::string chunk;
+    std::vector<std::string> splitArr;
+
+
+    if (connection.request.attr.find("Transfer-Encoding") != connection.request.attr.end() &&\
+            connection.request.attr["Transfer-Encoding"] == " chunked")
+    {
+        splitArr = split(connection.request.body, '\n', 1);
+        chunk = splitArr[1];
+        //chunk =  connection.request.body.substr(connection.request.body.find("\n", 0), connection.request.body.length());
+        if (chunk.find("0\n\n") != std::string::npos)
+        {   
+            splitArr = splitString(chunk, "0\n\n");
+            chunk = splitArr[0];
+            connection.request.ended = true;
+        }
+        write(connection.request.openedFd, chunk.c_str(), chunk.size());
+    }
+    else
+    {
+                std::cout << "INNNNNNNNNNNNNNNNNN" << std::endl;
+
+        write(connection.request.openedFd, connection.request.body.c_str(), connection.request.body.size());
+    }
 }
 void handlingPost(Connections &connection)
 {
@@ -52,6 +75,7 @@ void handlingPost(Connections &connection)
     }
     else if(connection.request.openedFd != -2)
         fillFile(connection);
+    std::cerr << connection.request.body << std::endl;
 
     if (connection.server->locations[connection.response.location].upload_enable)
     {
@@ -62,9 +86,7 @@ void handlingPost(Connections &connection)
                 uploadPath.erase(uploadPath.size() - 1, 1);
         }
         else
-        {
             uploadPath = connection.response.root + "/uploads";
-        }
         if (access(uploadPath.c_str(), F_OK) == -1)
         {
 
@@ -97,6 +119,7 @@ void handlingPost(Connections &connection)
 
     if (contentType.find("application/x-www-form-urlencoded") != std::string::npos)
     {
+        std::cerr << "------------------------> application/x-www-form-urlencoded" << std::endl;
         std::string key = urlDecodeStr(connection.request.body.substr(0, connection.request.body.find("=")));
         std::string value = urlDecodeStr(connection.request.body.substr(connection.request.body.find("=") + 1));
         connection.request.formUrlEncoded[key] = value;
@@ -104,6 +127,7 @@ void handlingPost(Connections &connection)
 
     else if (contentType.find("multipart/form-data") != std::string::npos)
     {
+        std::cerr << "------------------------> multipart/form-data" << std::endl;
         std::string boundary = contentType.substr(contentType.find("boundary=") + 9);
         std::vector<std::string> files;
         files = splitString(connection.request.body, "--" + boundary);
@@ -137,9 +161,17 @@ void handlingPost(Connections &connection)
             connection.request.ended = true;
             return;
         }
-        write(connection.request.openedFd, connection.request.body.c_str(), connection.request.body.size());
+        fillFile(connection);
+        // if (connection.request.attr.find("Transfer-Ecoding") != connection.request.attr.end() &&\
+        //     connection.request.attr["Transfer-Encoding"] == "chunked")
+        //     write(connection.request.openedFd,\
+        //     connection.request.body.substr(connection.request.body.find("\r\n", 0), connection.request.body.length()).c_str(),\
+        //     connection.request.body.size());
+        // else
+        //     write(connection.request.openedFd, connection.request.body.c_str(), connection.request.body.size());
         connection.response.code = 201;
         return;
     }
+    //std::cerr << "-------------------------------> MOME" << std::endl;
     connection.response.code = 201;
 }

@@ -48,6 +48,7 @@ class Request
 
         Request(): openedFd(-2)
         {
+            this->ended = false;
             this->fileName = "file_" + generateRandomString();
         };
         // Request(const Request &other){
