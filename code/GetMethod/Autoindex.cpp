@@ -53,6 +53,6 @@ std::string AutoIndex::getLink(std::string dirEntry, std::string dirName, std::s
 
     std::stringstream ss;
     ss << "\t\t<p><a href=\"http://" + host + ":" << port << dirName + dirEntry + "\">" + dirEntry + "</a></p>\n";
-    std::cout << ss.str() << std::endl;
+    // std::cout << ss.str() << std::endl;
     return ss.str();
 }

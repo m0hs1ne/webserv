@@ -19,8 +19,10 @@ typedef struct Part
 class Request
 {
     public:
+        size_t buffer_size;
         std::string method;
         std::string body;
+        char *bodyStr;
         std::map<std::string, std::string> formUrlEncoded;
         std::string path;
         std::string query;
@@ -32,7 +34,11 @@ class Request
         bool ok;
         bool ended;
         int openedFd;
+        int bFd;
         std::string fileName;
+        std::string contentType;
+        std::string uploadPath;
+        std::string lastLine;
         int i;
 
         typedef struct parsingConfig::server Server;
@@ -46,7 +52,7 @@ class Request
 
         Response handleRequest(std::string buffer, Server &server);
 
-        Request(): openedFd(-2)
+        Request(): openedFd(-2), bFd(-2)
         {
             this->ended = false;
             this->fileName = "file_" + generateRandomString();

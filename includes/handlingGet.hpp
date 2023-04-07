@@ -2,5 +2,5 @@
 #define GET_HPP
 #include "../Server/Sockets.hpp"
 
-void handlingGet(Connections &connection);
+void handlingGet(SocketConnection &connection);
 #endif

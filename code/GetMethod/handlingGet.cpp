@@ -7,7 +7,7 @@
 typedef parsingConfig::server Server;
 
 
-void handleDir(Request request, Response &response, Server &server)
+void handleDir(Request &request, Response &response, Server &server)
 {
     AutoIndex autoindex;
 
@@ -39,16 +39,16 @@ void handleDir(Request request, Response &response, Server &server)
     }
 }
 
-bool isLocation(Connections &connection)
+bool isLocation(SocketConnection &connection)
 {
-    std::cout << "----========== " << connection.server->locations[connection.response.location].name << std::endl;
+    // std::cout << "----========== " << connection.server->locations[connection.response.location].name << std::endl;
     if (connection.request.path != "/" && \
         connection.server->locations[connection.response.location].name == connection.request.path)
         return true;
     return false;
 }
 
-void handleLocation(Connections &connection)
+void handleLocation(SocketConnection &connection)
 {
     connection.response.fullPath += "/";
     connection.response.code = 301;
@@ -56,8 +56,9 @@ void handleLocation(Connections &connection)
     return;
 }
 
-void handlingGet(Connections &connection)
+void handlingGet(SocketConnection &connection)
 {
+    connection.ended = true;
     if (isLocation(connection))
         handleLocation(connection);
     else if (isDir(connection.response.fullPath.c_str()) == -1)

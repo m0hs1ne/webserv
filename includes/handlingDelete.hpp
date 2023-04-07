@@ -4,5 +4,5 @@
 #include <cstdio>
 #include <dirent.h>
 
-void handlingDelete(Connections &connection);
+void handlingDelete(SocketConnection &connection);
 #endif

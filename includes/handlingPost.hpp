@@ -4,6 +4,6 @@
 #include "../includes/handlingCGI.hpp"
 #include <sys/stat.h>
 
-void handlingPost(Connections &connection);
+void handlingPost(SocketConnection &connection);
 
 #endif

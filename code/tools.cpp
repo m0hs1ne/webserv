@@ -33,12 +33,11 @@ std::string generateRandomString()
 
 size_t countLines(std::string src)
 {
-    size_t i = 0;
     size_t lines = 1;
 
-    while (src[i])
+    for (std::string::const_iterator it = src.begin(); it != src.end(); ++it)
     {
-        if (src[i++] == '\n')
+        if (*it == '\n')
             ++lines;
     }
     return lines;
@@ -195,7 +194,13 @@ std::string itos(size_t n)
     return res;
 }
 
-std::string getLine(std::string src, size_t n)
+void copyByteByByte(std::string &str1, std::string &str2)
+{
+    for (size_t i = 0; i < sizeof(str2.c_str()); i++)
+        str1[sizeof(str1.c_str()) + i] = str2[i];
+}
+
+std::string getLine(std::string src, size_t n, size_t size)
 {
     size_t i = 0;
     size_t j = 0;
@@ -208,20 +213,52 @@ std::string getLine(std::string src, size_t n)
         if (src[i++] == '\n')
             ++lineCount;
     }
-    while (std::isspace(src[i]) && src[i] != '\n')
+    while (i < size && src[i] != '\n')
         i++;
-    while (src[i + j] && src[i + j] != '\n')
+    while (i + j < size && src[i + j] != '\n')
         j++;
-    while (j > 0 && std::isspace(src[i + j - 1]))
-        --j;
+    std::cout << "i: " << i << " j: " << j << std::endl;
     return (std::string(src, i, j));
 }
 
-std::vector<std::string> splitString(std::string str, std::string delimiter)
+// std::string getLine(std::string src, size_t n)
+// {
+//     size_t i = 0;
+//     size_t j = 0;
+//     size_t lineCount = 0;
+
+//     if (n >= countLines(src))
+//         return std::string();
+//     while (lineCount < n)
+//     {
+//         if (src[i++] == '\n')
+//             ++lineCount;
+//     }
+//     while (src[i] != '\n')
+//         i++;
+//     while (src[i + j] && src[i + j] != '\n')
+//         j++;
+//     while (j > 0)
+//         --j;
+//     return (std::string(src, i, j));
+// }
+
+char *ft_strdup(const char *str, size_t size)
+{
+    char *dup = new char[size];
+
+    for (size_t i = 0; i < size; i++)
+        dup[i] = str[i];
+    return dup;
+}
+
+std::vector<std::string> splitString(std::string str, std::string delimiter, size_t size)
 {
     std::vector<std::string> tokens;
     size_t start = 0;
-    size_t end = str.find(delimiter);
+    size_t end = findByteByByte(str, delimiter, size, delimiter.size());
+    if (end == std::string::npos)
+        return tokens;
     while (end != std::string::npos)
     {
         tokens.push_back(str.substr(start, end - start));
@@ -231,6 +268,27 @@ std::vector<std::string> splitString(std::string str, std::string delimiter)
     tokens.push_back(str.substr(start));
     return tokens;
 }
+
+std::string getLastLine(const std::string& str)
+{
+    std::string::size_type pos = str.find_last_of("\n\r");
+    if (pos == std::string::npos) {
+        return str;
+    }
+    else if (pos == str.size() - 1) {
+        std::string::size_type prevPos = str.find_last_of("\n\r", pos - 1);
+        if (prevPos == std::string::npos) {
+            return str.substr(pos + 1);
+        }
+        else {
+            return str.substr(prevPos + 1, pos - prevPos - 1);
+        }
+    }
+    else {
+        return str.substr(pos + 1);
+    }
+}
+
 
 std::vector<std::string> split(std::string str, char c, int stop)
 {
@@ -290,4 +348,26 @@ int isDir(const char *pathname)
         return -1;
     else
         return 0;
+}
+
+size_t findByteByByte(const std::string& str1, const std::string& str2, size_t str1Size, size_t str2Size)
+{
+    if (str2Size > str1Size)
+        return std::string::npos;
+
+    for (size_t i = 0; i < str1Size - str2Size + 1; i++)
+    {
+        bool match = true;
+        for (size_t j = 0; j < str2Size; j++) 
+        {
+            if (str1[i + j] != str2[j])
+            {
+                match = false;
+                break;
+            }
+        }
+        if (match)
+            return i;
+    }
+    return std::string::npos;
 }

@@ -39,7 +39,6 @@ bool Request::urlDecode(Response &response)
         }
     }
     this->path = decoded.str();
-    std::cout << "decoded path: " << this->path << std::endl;
     return true;
 }
 
@@ -49,12 +48,12 @@ void fillPostBody(std::string buffer, Request &req, int line)
     std::string bodyLine;
 
     buffer += "\nEOF";
-    bodyLine = getLine(buffer, line);
+    bodyLine = getLine(buffer, line, req.buffer_size);
     line++;
     for (int i = line; bodyLine != "EOF"; i++)
     {
         req.body += bodyLine + "\n";
-        bodyLine = getLine(buffer, i);
+        bodyLine = getLine(buffer, i, req.buffer_size);
     }
 }
 
@@ -64,7 +63,8 @@ void Request::fillRequest(const std::string &buffer)
     int i;
 
     this->size = buffer.size();
-    std::string line = getLine(buffer, 0);
+    std::cout << "buffer size: " << this->size << std::endl;
+    std::string line = getLine(buffer, 0, this->buffer_size);
     this->pathFound = false;
     splitArr = split(line, ' ', 0);
     this->method = splitArr[0];
@@ -75,12 +75,12 @@ void Request::fillRequest(const std::string &buffer)
         this->path = splitArr[0];
         this->query = splitArr[1];
     }
-    line = getLine(buffer, 1);
+    line = getLine(buffer, 1, this->buffer_size);
     for (i = 1; !line.empty(); i++)
     {
         splitArr = split(line, ':', 1);
         this->attr[splitArr[0]] = splitArr[1];
-        line = getLine(buffer, i);
+        line = getLine(buffer, i, this->buffer_size);
     }
     if (this->method == "POST")
         fillPostBody(buffer, *this, i);
@@ -206,7 +206,7 @@ bool Request::methodAllowed(Response &response, Server &server)
 
 Response Request::handleRequest(std::string buffer, Server &server)
 {
-    if (this->openedFd == -2)
+    if (this->openedFd == -2 && this->bFd == -2)
     {
         Response *response = new Response();
         Response resp;
@@ -219,14 +219,15 @@ Response Request::handleRequest(std::string buffer, Server &server)
         {
             this->ok = true;
         }
+        std::cout << this->method << std::endl;
         resp = *response;
         delete response;
         return resp;
     }
     else
     {
+        std::cout << "openedFd : " << this->openedFd  << std::endl;
         this->method = "POST";
-        this->body = buffer;
         Response response;
         response.code = 200;
         return response;

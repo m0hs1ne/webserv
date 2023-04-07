@@ -49,8 +49,9 @@ void WebServ::RunServer()
     {
         size_t kq_return = 0;
         struct kevent revents[10];
+        //usleep(1000);
         kq_return = kevent(this->kq, 0, 0, revents, 10, &timeout);
-        std::cout << "waiting fot new connections" << std::endl;
+        // std::cout << "waiting for new connections" << std::endl;
         if (kq_return < 0)
         {
             perror("failed");
@@ -58,205 +59,209 @@ void WebServ::RunServer()
         }
         if (kq_return == 0)
         {
-            std::cout << "timed out\n"
-                      << std::endl;
+            // std::cout << "timed out\n"
+            //           << std::endl;
             continue;
         }
-        if (NewConnections_Handler(revents, kq_return))
-            continue;
-        Read_connections(revents, kq_return);
-        // Answer_Connections();
-        drop_clients();
-        // exit(0);
+        // std::cout << "kq return --> " << kq_return << std::endl;
+        CheckEvents(revents, kq_return);
     }
 }
 
 void WebServ::SetUpSockets()
 {
     int valread;
-
     for (size_t i = 0; i < servers.size(); i++)
     {
-        SocketConnection Socket;
+        SocketConnection *Socket = new SocketConnection;
         struct kevent event;
-        if (!(Socket.socket_fd = socket(AF_INET, SOCK_STREAM, 0)))
+        if (!(Socket->socket_fd = socket(AF_INET, SOCK_STREAM, 0)))
         {
             perror("socket failed");
             exit(EXIT_FAILURE);
         }
-        if (setsockopt(Socket.socket_fd, SOL_SOCKET, SO_REUSEPORT, &valread, sizeof(valread)))
+        if (setsockopt(Socket->socket_fd, SOL_SOCKET, SO_REUSEPORT, &valread, sizeof(valread)))
         {
             perror("setsockopt");
             exit(EXIT_FAILURE);
         }
-        Socket.addr.sin_family = AF_INET;
-        Socket.addr.sin_addr.s_addr = INADDR_ANY;
-        Socket.addr.sin_port = htons(servers[i].port);
-        Socket.socket_port = this->servers[i].port;
-        memset(Socket.addr.sin_zero, '\0', sizeof(Socket.addr.sin_zero));
-        if (bind(Socket.socket_fd, (struct sockaddr *)&Socket.addr, sizeof(Socket.addr)) < 0)
+        Socket->server = &servers[i];
+        Socket->addr.sin_family = AF_INET;
+        Socket->addr.sin_addr.s_addr = INADDR_ANY;
+        Socket->addr.sin_port = htons(servers[i].port);
+        Socket->socket_port = this->servers[i].port;
+        Socket->IsPortSocket = 1;
+        memset(Socket->addr.sin_zero, '\0', sizeof(Socket->addr.sin_zero));
+        if (bind(Socket->socket_fd, (struct sockaddr *)&Socket->addr, sizeof(Socket->addr)) < 0)
         {
             perror("bind failed");
             exit(EXIT_FAILURE);
         }
-        if (listen(Socket.socket_fd, 3) < 0)
+        if (listen(Socket->socket_fd, 3) < 0)
         {
             perror("listen");
             exit(EXIT_FAILURE);
         }
         std::cout << "Listening on port " << servers[i].port << std::endl;
-        this->Sockets.push_back(Socket);
-        EV_SET(&event, Socket.socket_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
+        EV_SET(&event, Socket->socket_fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, reinterpret_cast<void *>(Socket));
         kevent(this->kq, &event, 1, 0, 0, 0);
     }
 }
 
-int WebServ::NewConnections_Handler(struct kevent *revents, size_t kq_return)
+int WebServ::AcceptNewConnections(SocketConnection *Socket)
 {
-    std::vector<SocketConnection>::iterator it;
-    std::vector<Connections>::iterator it2;
-    for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
-    {
-        for (size_t j = 0; j < kq_return; j++)
-        {
-            if (revents[j].ident == it->socket_fd)
-            {
-                struct kevent event[2];
-                Connections new_socket;
-                socklen_t len = sizeof(it->addr);
-                new_socket.Connec_fd = accept(it->socket_fd, (sockaddr *)&it->addr, &len);
-                // fcntl(new_socket.Connec_fd, F_SETFL, O_NONBLOCK);
-                new_socket.drop_connection = 0;
-                new_socket.data_s = 0;
-                new_socket.content_size = 0;
-                EV_SET(&event[0], new_socket.Connec_fd, EVFILT_READ, EV_ADD, 0, 0, NULL);
-                EV_SET(&event[1], new_socket.Connec_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, NULL);
-                kevent(this->kq, event, 2, 0, 0, 0);
-                it->connections.push_back(new_socket);
-                this->Answer++;
-                return 1;
-            }
-        }
-    }
-    return 0;
+    SocketConnection *new_Socket = new SocketConnection;
+    struct kevent event[2];
+
+    socklen_t len = sizeof(Socket->addr);
+    new_Socket->drop_connection = 0;
+    new_Socket->data_s = 0;
+    new_Socket->content_size = 0;
+    new_Socket->IsPortSocket = 0;
+    new_Socket->server = Socket->server;
+    new_Socket->socket_fd = accept(Socket->socket_fd, (sockaddr *)&Socket->addr, &len);
+
+    // fcnt÷l(new_Socket->socket_fd, F_SETFL, O_NONBLOCK);
+    EV_SET(&event[0], new_Socket->socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void *>(new_Socket));
+    EV_SET(&event[1], new_Socket->socket_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, reinterpret_cast<void *>(new_Socket));
+    kevent(this->kq, event, 2, 0, 0, 0);
+    return 1;
 }
 
-void WebServ::Read_connections(struct kevent *revents, size_t kq_return)
+void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t  filter)
 {
-    std::vector<SocketConnection>::iterator it;
-    std::vector<Connections>::iterator it2;
     std::map<int, std::string> *code = new std::map<int, std::string>;
     initHttpCode(*code);
-    for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
+    struct  kevent event[2];
+    
+    if (filter == EVFILT_READ)
     {
-        for (it2 = it->connections.begin(); it2 != it->connections.end(); it2++)
+        int ret = 0;
+        char buffer[2048] = {0};
+        ret = read(Connection->socket_fd, buffer, 2047);
+        if(ret == 0)
         {
-            if (is_readable(revents, kq_return, it2->Connec_fd))
+            write(Connection->socket_fd, "hello", 5);
+            close(Connection->socket_fd);
+        }
+        buffer[ret] = '\0';
+        // std:÷:cout << buffer << std::endl;
+       
+        std::cout << "buffer -->" << buffer << std::endl; 
+        Connection->request.buffer_size = ret;
+        if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
+        {
+            Connection->response.codeMsg = code;
+            Connection->response = Connection->request.handleRequest(buffer, this->servers[0]);
+        }
+        std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
+        // std::cout << Connection->request.ok << std::endl;
+        if (Connection->request.ok)
+        {
+            if (Connection->request.method == "POST")
+                handlingPost(*Connection);
+            else if (Connection->request.method == "GET")
+                handlingGet(*Connection); // GET
+            else if (Connection->request.method == "DELETE")
+                handlingDelete(*Connection); // DELETE
+        }
+        Connection->response.formResponse(Connection->request.method, *(Connection->server));
+        if (Connection->ended)
+        {
+            EV_SET(&event[0],  Connection->socket_fd, EVFILT_READ, EV_ADD | EV_DELETE, 0, 0, reinterpret_cast<void *>(Connection));
+            EV_SET(&event[1],  Connection->socket_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void *>(Connection));
+            kevent(this->kq, event, 2, 0, 0, 0);
+        }
+    }
+    else if (filter == EVFILT_WRITE)
+    {
+        char buffer[2048] = {0};
+        int _return;
+
+        if (!Connection->response.response.empty())
+        {
+            // Connection->response.response += "Content-Length: 11486837";
+            write(Connection->socket_fd, Connection->response.response.c_str(), Connection->response.response.size());
+            Connection->response.response.clear();
+        }
+        else if (!Connection->response.returnFile.empty())
+        {
+            _return = read(Connection->response.fileFD, buffer, 2047);
+            std::cout << Connection->response.fileFD << std::endl;
+            std::cout << _return << std::endl;
+            if (_return > 0)
             {
-                int ret = 0;
-                char buffer[2048] = {0};
-                it2->server = &this->servers[0];
-                ret = read(it2->Connec_fd, buffer, 2047);
-                if(ret == 0)
-                {
-                    close(it2->Connec_fd);
-                    it2->drop_connection = 1;
-                    continue;
-                }
-                buffer[ret] = '\0';
-                     std::cout << "buffer -->"<< buffer << std::endl;
-                if (it2->request.method.empty())
-                {
-                        it2->response.codeMsg = code;
-                        it2->response = it2->request.handleRequest(buffer, this->servers[0]);
-                }
-                if (it2->request.ok)
-                {
-                    if (it2->request.method == "POST")
-                    {
-                        handlingPost(*it2);
-                    } // POST
-                    else if (it2->request.method == "GET")
-                    {
-                        handlingGet(*it2);
-                    } // GET
-                    else if (it2->request.method == "DELETE")
-                    {
-                        handlingDelete(*it2);
-                    } // DELETE
-                }
-                it2->response.formResponse(it2->request.method, *(it2->server));
-                if (it2->content_size <= 0)
-                {
-                    AddEvent(it2->Connec_fd, EVFILT_READ, EV_DELETE);
-                    AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_ENABLE);
-                }
+                // std::cout << buffer << std::endl;
+                write(Connection->socket_fd, buffer, _return);
             }
-            else if (is_writable(revents, kq_return, it2->Connec_fd))
+            else
             {
-                std::cout << "writing" << std::endl;
-                char buffer1[5000] = {0};
-                read(it2->response.fileFD,buffer1 , 4998);
-                buffer1[4999] = '\0';
-                it2->response.body += buffer1;
-                std::cout << "body -->" << it2->response.body << std::endl;
-                it2->response.response += "Content-Length: " + itos(it2->response.body.size()) + "\r\n\r\n";
-                write(it2->Connec_fd, (it2->response.response + it2->response.body).c_str(), it2->response.response.size() + it2->response.body.size());
-                AddEvent(it2->Connec_fd, EVFILT_WRITE, EV_DELETE);
-                close(it2->Connec_fd);
-                it2->drop_connection = 1;
-                std::cout << "Answer \n"
-                          << std::endl;
+                Connection->drop_connection = 1;
+                std::cout << "Answer " << std::endl;
+                AddEvent(Connection->socket_fd, EVFILT_WRITE, EV_DELETE);
+                close(Connection->socket_fd);
             }
+        }
+        else
+        {
+            write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size());
+            Connection->drop_connection = 1;
+            std::cout << "Answer " << std::endl;
+            AddEvent(Connection->socket_fd, EVFILT_WRITE, EV_DELETE);
+            close(Connection->socket_fd);
         }
     }
     delete code;
 }
 
-int WebServ::is_readable(struct kevent *revents, size_t kq_return, uint64_t socket_fd)
+int WebServ::CheckEvents(struct kevent *revents, size_t kq_return)
 {
     for (size_t i = 0; i < kq_return; i++)
     {
-        if (revents[i].ident == socket_fd)
+        // std::cout << "0\n";
+        SocketConnection *Connection = reinterpret_cast<SocketConnection *>(revents[i].udata);
+        if(Connection->IsPortSocket)
         {
-            if (revents[i].filter == EVFILT_READ)
-                return 1;
+            AcceptNewConnections(Connection);
+            // std::cout << "1\n";
+        }
+        else if(!Connection->IsPortSocket)
+        {
+            HandleEstablishedConnections(Connection, revents[i].filter);
+            // std::cout << "2\n";m
         }
     }
     return 0;
 }
 
-int WebServ::is_writable(struct kevent *revents, size_t kq_return, uint64_t socket_fd)
-{
-    for (size_t i = 0; i < kq_return; i++)
-    {
-        if (revents[i].ident == socket_fd)
-        {
-            if (revents[i].filter == EVFILT_WRITE)
-                return 1;
-        }
-    }
-    return 0;
-}
+// int WebServ::is_writable(struct kevent *revents, size_t kq_return, uint64_t socket_fd)
+// {
+//     for (size_t i = 0; i < kq_return; i++)
+//     {
+//         if (revents[i].ident == socket_fd)
+//         {
+//             if (revents[i].filter == EVFILT_WRITE)
+//                 return 1;
+//         }
+//     }
+//     return 0;
+// }
 
-
-void WebServ::drop_clients()
-{
-    std::vector<SocketConnection>::iterator it;
-    std::vector<Connections>::iterator it2;
-    for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
-    {
-        for (it2 = it->connections.begin(); it2 != it->connections.end();)
-        {
-            if (it2->drop_connection)
-                it2 = it->connections.erase(it2);
-            else
-                it2++;
-        }
-    }
-}
-
-
+// void WebServ::drop_clients()
+// {
+//     std::vector<SocketConnection>::iterator it;
+//     std::vector<Connections>::iterator it2;
+//     for (it = this->Sockets.begin(); it != this->Sockets.end(); it++)
+//     {
+//         for (it2 = it->connections.begin(); it2 != it->connections.end();)
+//         {
+//             if (it2->drop_connection)
+//                 it2 = it->connections.erase(it2);
+//             else
+//                 it2++;
+//         }
+//     }
+// }
 
 void WebServ::AddEvent(int fd, int16_t filter, uint16_t flag)
 {

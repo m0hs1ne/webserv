@@ -11,7 +11,7 @@ char** convertToCharArray(std::vector<std::string> strings) {
     return charArray;
 }
 
-char **setEnv(Response response, Request request, Server &server)
+char **setEnv(Response response, Request &request, Server &server)
 {
     std::vector<std::string> stdEnv;
 
@@ -99,7 +99,7 @@ char **setEnv(Response response, Request request, Server &server)
 //     }
 // }
 
-void checkCGI(Request request, Response &response, Server &server)
+void checkCGI(Request &request, Response &response, Server &server)
 {
     std::string cgiExts = server.locations[response.location].cgi_extension[0];
     std::string cgiPaths = server.locations[response.location].cgi_path;
@@ -170,19 +170,22 @@ void checkCGI(Request request, Response &response, Server &server)
         {
             n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
             buffer[n] = '\0';
-            buf += buffer;
+            for (size_t i = 0; i < n; i++)
+                buf.push_back(buffer[i]);
         }
-        line = getLine(buf, 0);
+        line = getLine(buf, 0, sizeof(buf.c_str()));
         int i = 1;
         while (!line.empty())
         {
             header += line + "\r\n";
-            line = getLine(buf, i);
+            line = getLine(buf, i, sizeof(buf.c_str()));
             i++;
         }
         buf.erase(0, header.size());
         response.cgiheader = header;
-        response.body = buf;
+        for (size_t i = 0; i < sizeof(buf.c_str()); i++)
+            request.body.push_back(buf[i]);
+        copyByteByByte(response.body, buf);
         close(pipefd[0]);
         wait(NULL);
     }

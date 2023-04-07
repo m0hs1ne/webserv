@@ -27,6 +27,7 @@ class Response
         Response(const Response& other);
         Response& operator=(const Response& other);
         void formResponse(std::string method, Server &server);
+        std::map<int, std::string> initHttpCode();
         ~Response();
 };
 #endif
