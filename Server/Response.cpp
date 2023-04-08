@@ -41,7 +41,8 @@ Response& Response::operator=(const Response& other)
     this->location = other.location;
     this->root = other.root;
     this->fullPath = other.fullPath;
-    this->body = other.body;
+    this->body = "";
+    this->body.append(other.body, sizeof(other.body.c_str()));
     this->type = other.type;
     this->cgiheader = other.cgiheader;
     return *this;

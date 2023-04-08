@@ -50,7 +50,7 @@ class Request
         void checkPathFound(Response &response, Server &server);
         bool urlDecode(Response &response);
 
-        Response handleRequest(std::string buffer, Server &server);
+        Response handleRequest(char *buffer, Server &server);
 
         Request(): openedFd(-2), bFd(-2)
         {

@@ -42,31 +42,42 @@ bool Request::urlDecode(Response &response)
     return true;
 }
 
-void fillPostBody(std::string buffer, Request &req, int line)
+void fillPostBody(std::string &buffer, Request &req, int line)
 {
     std::vector<std::string> splitArr;
-    std::string bodyLine;
+    std::string *bodyLine;
+    std::string buf_tmp = "";
+    size_t size = 0;
 
-    buffer += "\nEOF";
-    bodyLine = getLine(buffer, line, req.buffer_size);
-    line++;
-    for (int i = line; bodyLine != "EOF"; i++)
-    {
-        req.body += bodyLine + "\n";
-        bodyLine = getLine(buffer, i, req.buffer_size);
-    }
+    // buffer.push_back('\n');
+    // buffer.push_back('E');
+    // buffer.push_back('O');
+    // buffer.push_back('F');
+    // buf_tmp.append((buffer + "\nEOF").c_str(), req.buffer_size + 4);
+    // bodyLine = getLine(buffer, line, req.buffer_size, &size);
+    // line++;
+    // for (int i = line; *bodyLine != "EOF"; i++)
+    // {
+    //     std::cout << "bodyLine: " << *bodyLine << std::endl;
+    //     req.body.append((*bodyLine).c_str(), size);
+    //     delete bodyLine;
+    //     bodyLine = getLine(buf_tmp, i, req.buffer_size + 4, &size);
+    // }
+    // delete bodyLine;
+
+    std::cout << "body: " << req.body << std::endl;
 }
 
 void Request::fillRequest(const std::string &buffer)
 {
     std::vector<std::string> splitArr;
+    std::string buf_tmp = "";
     int i;
-
-    this->size = buffer.size();
-    std::cout << "buffer size: " << this->size << std::endl;
-    std::string line = getLine(buffer, 0, this->buffer_size);
+    buf_tmp.append(buffer.c_str(), this->buffer_size);
+    std::string *line = getLine(buf_tmp, 0, this->buffer_size);
     this->pathFound = false;
-    splitArr = split(line, ' ', 0);
+    splitArr = split(*line, ' ', 0);
+    delete line;
     this->method = splitArr[0];
     this->path = splitArr[1];
     splitArr = split(this->path, '?', 1);
@@ -75,15 +86,20 @@ void Request::fillRequest(const std::string &buffer)
         this->path = splitArr[0];
         this->query = splitArr[1];
     }
-    line = getLine(buffer, 1, this->buffer_size);
-    for (i = 1; !line.empty(); i++)
+    line = getLine(buf_tmp, 1, this->buffer_size);
+    for (i = 2; !line->empty(); i++)
     {
-        splitArr = split(line, ':', 1);
+        if(line->size() == 1 && (*line)[0] == '\r')
+            break;
+        splitArr = split(*line, ':', 1);
+        delete line;
         this->attr[splitArr[0]] = splitArr[1];
-        line = getLine(buffer, i, this->buffer_size);
+        line = getLine(buf_tmp, i, this->buffer_size);
     }
+    delete line;
+    std::cout << "method: " << this->method << std::endl;
     if (this->method == "POST")
-        fillPostBody(buffer, *this, i);
+        fillPostBody(buf_tmp, *this, i);
 }
 
 bool Request::isRequestWellFormed(Response &response, Server &server)
@@ -204,13 +220,16 @@ bool Request::methodAllowed(Response &response, Server &server)
     return false;
 }
 
-Response Request::handleRequest(std::string buffer, Server &server)
+Response Request::handleRequest(char *buffer, Server &server)
 {
     if (this->openedFd == -2 && this->bFd == -2)
     {
         Response *response = new Response();
         Response resp;
-        fillRequest(buffer);
+        std::string *buff = new std::string();
+        for (size_t i = 0; i < this->buffer_size; i++)
+            buff->push_back(buffer[i]);
+        fillRequest(*buff);
         this->ok = false;
         if (isRequestWellFormed(*response, server) &&
             urlDecode(*response) &&
@@ -219,14 +238,12 @@ Response Request::handleRequest(std::string buffer, Server &server)
         {
             this->ok = true;
         }
-        std::cout << this->method << std::endl;
         resp = *response;
         delete response;
         return resp;
     }
     else
     {
-        std::cout << "openedFd : " << this->openedFd  << std::endl;
         this->method = "POST";
         Response response;
         response.code = 200;

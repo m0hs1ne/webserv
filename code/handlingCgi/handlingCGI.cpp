@@ -163,7 +163,7 @@ void checkCGI(Request &request, Response &response, Server &server)
         freeCharArray(envp);
         close(pipefd[1]);
         std::string header;
-        std::string line;
+        std::string *line;
         std::string buf;
         size_t n = 1;
         while (n != 0)
@@ -175,9 +175,9 @@ void checkCGI(Request &request, Response &response, Server &server)
         }
         line = getLine(buf, 0, sizeof(buf.c_str()));
         int i = 1;
-        while (!line.empty())
+        while (!line->empty())
         {
-            header += line + "\r\n";
+            header += *line + "\r\n";
             line = getLine(buf, i, sizeof(buf.c_str()));
             i++;
         }

@@ -212,11 +212,14 @@ void handlingPost(SocketConnection &connection)
 
     if (connection.request.contentType.find("application/x-www-form-urlencoded") != std::string::npos)
     {
-        std::string key = urlDecodeStr(connection.request.body.substr(0, connection.request.body.find("=")));
-        std::string value = urlDecodeStr(connection.request.body.substr(connection.request.body.find("=") + 1));
+        std::string *str = new std::string("");
+        str->append(connection.request.body.substr(0, findByteByByte(connection.request.body, "=", connection.request.buffer_size, sizeof("="))));
+        std::string key = urlDecodeStr(*str);
+        str->clear();
+        str->append(connection.request.body.substr(connection.request.body.find("=") + 1));
+        std::string value = urlDecodeStr(*str);
         connection.request.formUrlEncoded[key] = value;
     }
-
     else if (connection.request.contentType.find("multipart/form-data") != std::string::npos)
     {
         std::string boundary = connection.request.contentType.substr(connection.request.contentType.find("boundary=") + 9);

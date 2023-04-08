@@ -31,7 +31,7 @@ std::string generateRandomString()
     return random_string;
 }
 
-size_t countLines(std::string src)
+size_t countLines(std::string &src)
 {
     size_t lines = 1;
 
@@ -123,7 +123,7 @@ void freeCharArray(char **charArray)
     delete[] charArray;
 }
 
-std::string urlDecodeStr(std::string str)
+std::string urlDecodeStr(std::string &str)
 {
     std::ostringstream decoded;
     std::string rslt;
@@ -200,25 +200,55 @@ void copyByteByByte(std::string &str1, std::string &str2)
         str1[sizeof(str1.c_str()) + i] = str2[i];
 }
 
-std::string getLine(std::string src, size_t n, size_t size)
+std::string *getLine(std::string &src, size_t n, size_t size)
 {
     size_t i = 0;
-    size_t j = 0;
+    size_t j = 1;
     size_t lineCount = 0;
+    std::string *ret = new std::string();
+
 
     if (n >= countLines(src))
-        return std::string();
+        return ret;
     while (lineCount < n)
     {
-        if (src[i++] == '\n')
+        if (i < size && src[i++] == '\n')
             ++lineCount;
     }
-    while (i < size && src[i] != '\n')
+    if(src[i] == '\n')
         i++;
+    // while (i < size && src[i] != '\n')
+    //     i++;
     while (i + j < size && src[i + j] != '\n')
         j++;
-    std::cout << "i: " << i << " j: " << j << std::endl;
-    return (std::string(src, i, j));
+    *ret = std::string(src, i, j);
+    return (ret);
+}
+
+std::string *getLine(std::string &src, size_t n, size_t size, size_t *len)
+{
+    size_t i = 0;
+    size_t j = 1;
+    size_t lineCount = 0;
+    std::string *ret = new std::string();
+
+
+    if (n >= countLines(src))
+        return ret;
+    while (lineCount < n)
+    {
+        if (i < size && src[i++] == '\n')
+            ++lineCount;
+    }
+    if(src[i] == '\n')
+        i++;
+    // while (i < size && src[i] != '\n')
+    //     i++;
+    while (i + j < size && src[i + j] != '\n')
+        j++;
+    *len = j - i;
+    *ret = std::string(src, i, j);
+    return (ret);
 }
 
 // std::string getLine(std::string src, size_t n)

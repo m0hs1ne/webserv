@@ -146,13 +146,11 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         }
         buffer[ret] = '\0';
         // std:÷:cout << buffer << std::endl;
-       
-        std::cout << "buffer -->" << buffer << std::endl; 
         Connection->request.buffer_size = ret;
         if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
         {
             Connection->response.codeMsg = code;
-            Connection->response = Connection->request.handleRequest(buffer, this->servers[0]);
+            Connection->response = Connection->request.handleRequest(ft_strdup(buffer, ret), this->servers[0]);
         }
         std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
         // std::cout << Connection->request.ok << std::endl;
