@@ -31,6 +31,7 @@ void handleDir(Request &request, Response &response, Server &server)
         {
             response.code = 200;
             response.body = autoindex.getPage(response.fullPath.c_str(), request.path, server.host, server.port);
+            response.bodySize = response.body.size();
         }
         else
         {

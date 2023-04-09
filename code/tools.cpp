@@ -215,10 +215,8 @@ std::string *getLine(std::string &src, size_t n, size_t size)
         if (i < size && src[i++] == '\n')
             ++lineCount;
     }
-    if(src[i] == '\n')
+    if (src[i] == '\n')
         i++;
-    // while (i < size && src[i] != '\n')
-    //     i++;
     while (i + j < size && src[i + j] != '\n')
         j++;
     *ret = std::string(src, i, j);
@@ -232,9 +230,11 @@ std::string *getLine(std::string &src, size_t n, size_t size, size_t *len)
     size_t lineCount = 0;
     std::string *ret = new std::string();
 
-
     if (n >= countLines(src))
+    {
+        *len = 0;
         return ret;
+    }
     while (lineCount < n)
     {
         if (i < size && src[i++] == '\n')
@@ -246,7 +246,7 @@ std::string *getLine(std::string &src, size_t n, size_t size, size_t *len)
     //     i++;
     while (i + j < size && src[i + j] != '\n')
         j++;
-    *len = j - i;
+    *len = j;
     *ret = std::string(src, i, j);
     return (ret);
 }

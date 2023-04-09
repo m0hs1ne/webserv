@@ -26,6 +26,7 @@ class Request
         std::map<std::string, std::string> formUrlEncoded;
         std::string path;
         std::string query;
+        size_t headerSize;
         bool pathFound;
         std::map<std::string, std::string> attr;
         size_t size;

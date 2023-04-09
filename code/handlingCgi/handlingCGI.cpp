@@ -169,23 +169,23 @@ void checkCGI(Request &request, Response &response, Server &server)
         while (n != 0)
         {
             n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
+            response.bodySize += n;
             buffer[n] = '\0';
             for (size_t i = 0; i < n; i++)
                 buf.push_back(buffer[i]);
         }
-        line = getLine(buf, 0, sizeof(buf.c_str()));
+        line = getLine(buf, 0, response.bodySize);
         int i = 1;
         while (!line->empty())
         {
             header += *line + "\r\n";
-            line = getLine(buf, i, sizeof(buf.c_str()));
+            line = getLine(buf, i, response.bodySize);
             i++;
         }
         buf.erase(0, header.size());
+        response.bodySize -= header.size();
         response.cgiheader = header;
-        for (size_t i = 0; i < sizeof(buf.c_str()); i++)
-            request.body.push_back(buf[i]);
-        copyByteByByte(response.body, buf);
+        request.body.append(buf.c_str(), response.bodySize);
         close(pipefd[0]);
         wait(NULL);
     }

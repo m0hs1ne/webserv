@@ -147,7 +147,7 @@ void handlingPost(SocketConnection &connection)
         return;
     }
 
-    std::cout << "bfd -----> " << connection.request.bFd << std::endl;
+    std::cout << "bfd -----> " << connection.request.openedFd << std::endl;
     if (connection.request.ended)
     {
         close(connection.request.openedFd);

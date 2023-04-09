@@ -3,6 +3,7 @@
 
 Response::Response()
 {
+    this->bodySize = 0;
     this->code = 200;
     this->returnFile = "";
 }
@@ -42,7 +43,8 @@ Response& Response::operator=(const Response& other)
     this->root = other.root;
     this->fullPath = other.fullPath;
     this->body = "";
-    this->body.append(other.body, sizeof(other.body.c_str()));
+    this->body.append(other.body.c_str(), other.bodySize);
+    this->bodySize = other.bodySize;
     this->type = other.type;
     this->cgiheader = other.cgiheader;
     return *this;

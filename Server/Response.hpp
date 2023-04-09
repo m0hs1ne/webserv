@@ -12,6 +12,7 @@ class Response
         int code;
         int location;
         int fileFD;
+        size_t bodySize;
         std::string codeMessage;
         std::string returnFile;
         std::string response;

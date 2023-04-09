@@ -41,65 +41,80 @@ bool Request::urlDecode(Response &response)
     this->path = decoded.str();
     return true;
 }
+#include <stdio.h>
+void fillPostBody(std::string &buffer, Request &req)
+{
+    std::string buf_tmp = "";
+    size_t size = req.buffer_size - req.headerSize;
 
-void fillPostBody(std::string &buffer, Request &req, int line)
+    buf_tmp.append(buffer.c_str(), req.buffer_size);
+    buf_tmp.erase(0, req.headerSize);
+    req.body.append(buf_tmp.c_str(), size);
+    std::string *line = getLine(req.body, 0, size);
+    for (int i = 1; (*line) == "\r"; i++)
+    {
+        req.body.erase(0, 2);
+        size -= 2;
+        delete line;
+        line = getLine(req.body, i, size);
+    }
+    delete line;
+    req.body.erase(0, 2);
+}
+
+void ParseFirstLine(std::string &buffer, Request &req)
 {
     std::vector<std::string> splitArr;
-    std::string *bodyLine;
-    std::string buf_tmp = "";
-    size_t size = 0;
+    std::string *line;
+    size_t l_size = 0;
 
-    // buffer.push_back('\n');
-    // buffer.push_back('E');
-    // buffer.push_back('O');
-    // buffer.push_back('F');
-    // buf_tmp.append((buffer + "\nEOF").c_str(), req.buffer_size + 4);
-    // bodyLine = getLine(buffer, line, req.buffer_size, &size);
-    // line++;
-    // for (int i = line; *bodyLine != "EOF"; i++)
-    // {
-    //     std::cout << "bodyLine: " << *bodyLine << std::endl;
-    //     req.body.append((*bodyLine).c_str(), size);
-    //     delete bodyLine;
-    //     bodyLine = getLine(buf_tmp, i, req.buffer_size + 4, &size);
-    // }
-    // delete bodyLine;
+    line = getLine(buffer, 0, req.buffer_size, &l_size);
+    req.headerSize += l_size;
+    splitArr = split(*line, ' ', 0);
+    delete line;
+    req.method = splitArr[0];
+    req.path = splitArr[1];
+    splitArr = split(req.path, '?', 1);
+    if (splitArr.size() > 1)
+    {
+        req.path = splitArr[0];
+        req.query = splitArr[1];
+    }
+}
 
-    std::cout << "body: " << req.body << std::endl;
+void ParseHeaderAttr(std::string &buffer, Request &req)
+{
+    std::vector<std::string> splitArr;
+    std::string *line;
+    size_t l_size = 0;
+
+    line = getLine(buffer, 1, req.buffer_size, &l_size);
+    req.headerSize += l_size;
+    for (int i = 2; !line->empty(); i++)
+    {
+        if(line->size() == 1 && (*line)[0] == '\r')
+            break;
+        splitArr = split(*line, ':', 1);
+        delete line;
+        req.attr[splitArr[0]] = splitArr[1];
+        line = getLine(buffer, i, req.buffer_size, &l_size);
+        req.headerSize += l_size;
+    }
+    delete line;
 }
 
 void Request::fillRequest(const std::string &buffer)
 {
     std::vector<std::string> splitArr;
     std::string buf_tmp = "";
-    int i;
+
+    this->headerSize = 0;
     buf_tmp.append(buffer.c_str(), this->buffer_size);
-    std::string *line = getLine(buf_tmp, 0, this->buffer_size);
-    this->pathFound = false;
-    splitArr = split(*line, ' ', 0);
-    delete line;
-    this->method = splitArr[0];
-    this->path = splitArr[1];
-    splitArr = split(this->path, '?', 1);
-    if (splitArr.size() > 1)
-    {
-        this->path = splitArr[0];
-        this->query = splitArr[1];
-    }
-    line = getLine(buf_tmp, 1, this->buffer_size);
-    for (i = 2; !line->empty(); i++)
-    {
-        if(line->size() == 1 && (*line)[0] == '\r')
-            break;
-        splitArr = split(*line, ':', 1);
-        delete line;
-        this->attr[splitArr[0]] = splitArr[1];
-        line = getLine(buf_tmp, i, this->buffer_size);
-    }
-    delete line;
-    std::cout << "method: " << this->method << std::endl;
+
+    ParseFirstLine(buf_tmp, *this);
+    ParseHeaderAttr(buf_tmp, *this);
     if (this->method == "POST")
-        fillPostBody(buf_tmp, *this, i);
+        fillPostBody(buf_tmp, *this);
 }
 
 bool Request::isRequestWellFormed(Response &response, Server &server)
