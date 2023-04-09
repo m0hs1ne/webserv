@@ -89,7 +89,10 @@ void formGetResponse(Response &response, Server &server)
 
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
-    std::string type = setContentType(response.returnFile);
+    std::string ext = "." + response.returnFile.substr(response.returnFile.find_last_of(".") + 1);
+    std::string type = server.extToType[ext];
+    if (type.empty())
+        type = "text/html";
     if (response.body.empty() &&
         response.redirect.empty() &&
         (response.returnFile.empty()|| response.code == 404 || access(response.returnFile.c_str(), R_OK)))
@@ -115,6 +118,7 @@ void formGetResponse(Response &response, Server &server)
         response.returnFile.clear();
         fileSize = response.body.size();
     }
+
 
     response.response = "HTTP/1.1 ";
     response.response += code[response.code] + "\r\n";

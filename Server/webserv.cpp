@@ -148,7 +148,7 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         }
         buffer[ret] = '\0';
         fullsize += ret;
-        std::cout << "fullsize --> " << fullsize << " | ";
+        // std::cout << "fullsize --> " << fullsize << " | ";
         //std::cout << buffer << std::endl;
         Connection->request.buffer_size = ret;
         if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
@@ -180,8 +180,6 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         char buffer[2048] = {0};
         int _return;
 
-       std::cout << "fullsize : " << fullsize << std::endl;
-       exit(0);
         if (!Connection->response.response.empty())
         {
             // Connection->response.response += "Content-Length: 11486837";
