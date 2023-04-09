@@ -285,6 +285,30 @@ parsingConfig::location parsingConfig::parseLocation(const std::string &src, siz
     return l;
 }
 
+void parsingConfig::parseMimeTypes(std::string filename,server &s)
+{
+    std::ifstream file(filename);
+
+    if (file.is_open())
+    {
+        std::string line;
+        while (std::getline(file, line))
+        {
+            size_t space_pos = line.find(' ');
+            if (space_pos != std::string::npos)
+            {
+                std::string mime_type = line.substr(0, space_pos);
+                std::string file_ext = line.substr(space_pos + 1);
+                    s.extToType[file_ext] = mime_type;
+                    s.typeToExt[mime_type] = file_ext;
+            }
+        }
+        file.close();
+    }
+    else
+        throw parsingException("Unable to open mime.types file");
+}
+
 void parsingConfig::parseServerProp(const std::string &src, size_t n, server &s)
 {
     std::vector<std::string> line;
@@ -310,6 +334,9 @@ void parsingConfig::parseServerProp(const std::string &src, size_t n, server &s)
     }
     if (line[0] == serverProp[3])
         s.root = line[1];
+    if (line[0] == serverProp[4])
+        parseMimeTypes(line[1], s);
+        
 }
 
 void parsingConfig::parseServer(const std::string &src, size_t lineS, size_t lineE)
