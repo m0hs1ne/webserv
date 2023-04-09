@@ -41,7 +41,7 @@ bool Request::urlDecode(Response &response)
     this->path = decoded.str();
     return true;
 }
-#include <stdio.h>
+
 void fillPostBody(std::string &buffer, Request &req)
 {
     std::string buf_tmp = "";
@@ -59,7 +59,9 @@ void fillPostBody(std::string &buffer, Request &req)
         line = getLine(req.body, i, size);
     }
     delete line;
-    req.body.erase(0, 2);
+    req.body.erase(0, 5);
+    size -= 5;
+    req.bodySize = size;
 }
 
 void ParseFirstLine(std::string &buffer, Request &req)
@@ -242,8 +244,8 @@ Response Request::handleRequest(char *buffer, Server &server)
         Response *response = new Response();
         Response resp;
         std::string *buff = new std::string();
-        for (size_t i = 0; i < this->buffer_size; i++)
-            buff->push_back(buffer[i]);
+        
+        buff->append(buffer, this->buffer_size);
         fillRequest(*buff);
         this->ok = false;
         if (isRequestWellFormed(*response, server) &&
@@ -255,11 +257,14 @@ Response Request::handleRequest(char *buffer, Server &server)
         }
         resp = *response;
         delete response;
+        delete buff;
         return resp;
     }
     else
     {
         this->method = "POST";
+        this->body.clear();
+        this->body.append(buffer, this->buffer_size);
         Response response;
         response.code = 200;
         return response;

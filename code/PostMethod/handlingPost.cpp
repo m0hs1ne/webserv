@@ -116,24 +116,42 @@ void boundary(SocketConnection &connection)
 void fillFile(SocketConnection &connection)
 {
     std::string chunk;
+    size_t chunkSize;
+    std::string *line;
     std::vector<std::string> splitArr;
-    std::cout << connection.request.body << std::endl;
+
     if (connection.request.attr.find("Transfer-Encoding") != connection.request.attr.end() &&
         connection.request.attr["Transfer-Encoding"] == " chunked")
     {
-        splitArr = split(connection.request.body, '\n', 1);
-        chunk = splitArr[1];
-        if (chunk.find("0\n\n") != std::string::npos)
-        {
-            splitArr = splitString(chunk, "0\n\n", chunk.size());
-            chunk = splitArr[0];
-            connection.request.ended = true;
-        }
-        write(connection.request.openedFd, chunk.c_str(), chunk.size());
+        line = getLine(connection.request.body, 0, connection.request.buffer_size);
+        chunkSize = std::stoull(*line, nullptr, 16);
+        connection.request.body.erase(0,  line->size() + 1);
+        delete line;
+        if (chunkSize == 0)
+            connection.ended = true;
+        else
+            write(connection.request.openedFd, chunk.c_str(), chunkSize);
     }
     else
-        write(connection.request.openedFd, connection.request.body.c_str(), connection.request.body.size());
+    {
+        size_t len = std::stoll(connection.request.attr["Content-Length"]);
+        size_t size = 0;
+        if (connection.request.bodySize)
+            size = connection.request.bodySize;
+        else
+            size = connection.request.buffer_size;
+        std::cout << "bodySize : " << size << "| received : " << connection.request.received << "| length : " << len << std::endl;
+        write(connection.request.openedFd, connection.request.body.c_str(), size);
+        if (connection.request.received >= len)
+        {
+            close(connection.request.openedFd);
+            connection.ended = true;
+        }
+        connection.request.received += size;
+    }
+    connection.request.bodySize = 0;
 }
+
 void handlingPost(SocketConnection &connection)
 {
     std::string contentLength;
@@ -147,7 +165,6 @@ void handlingPost(SocketConnection &connection)
         return;
     }
 
-    std::cout << "bfd -----> " << connection.request.openedFd << std::endl;
     if (connection.request.ended)
     {
         close(connection.request.openedFd);
@@ -250,7 +267,11 @@ void handlingPost(SocketConnection &connection)
     }
     else
     {
-        connection.request.openedFd = open((uploadPath + "/" + connection.request.fileName).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
+        if(connection.request.contentType.empty())
+            connection.request.contentType = "text/bin";
+        std::vector<std::string> arr = splitString(connection.request.contentType, "/", connection.request.contentType.size());
+        arr[1].erase(arr[1].find("\r"), arr[1].size());
+        connection.request.openedFd = open((uploadPath + "/" + connection.request.fileName + "." + arr[1]).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
         if (connection.request.openedFd == -1)
         {
             connection.response.code = 500;

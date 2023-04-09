@@ -128,6 +128,8 @@ int WebServ::AcceptNewConnections(SocketConnection *Socket)
     return 1;
 }
 
+size_t fullsize = 0;
+
 void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t  filter)
 {
     std::map<int, std::string> *code = new std::map<int, std::string>;
@@ -145,14 +147,15 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
             close(Connection->socket_fd);
         }
         buffer[ret] = '\0';
-        // std:÷:cout << buffer << std::endl;
+        fullsize += ret;
+        std::cout << "fullsize --> " << fullsize << " | ";
+        //std::cout << buffer << std::endl;
         Connection->request.buffer_size = ret;
         if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
         {
             Connection->response.codeMsg = code;
             Connection->response = Connection->request.handleRequest(ft_strdup(buffer, ret), this->servers[0]);
         }
-        std::cout << "------------------------------------------------------------------------------------------------------------------" << std::endl;
         // std::cout << Connection->request.ok << std::endl;
         if (Connection->request.ok)
         {
@@ -166,6 +169,7 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         Connection->response.formResponse(Connection->request.method, *(Connection->server));
         if (Connection->ended)
         {
+            // std::cou÷t 
             EV_SET(&event[0],  Connection->socket_fd, EVFILT_READ, EV_ADD | EV_DELETE, 0, 0, reinterpret_cast<void *>(Connection));
             EV_SET(&event[1],  Connection->socket_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void *>(Connection));
             kevent(this->kq, event, 2, 0, 0, 0);
@@ -176,6 +180,8 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         char buffer[2048] = {0};
         int _return;
 
+       std::cout << "fullsize : " << fullsize << std::endl;
+       exit(0);
         if (!Connection->response.response.empty())
         {
             // Connection->response.response += "Content-Length: 11486837";
@@ -185,8 +191,6 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         else if (!Connection->response.returnFile.empty())
         {
             _return = read(Connection->response.fileFD, buffer, 2047);
-            std::cout << Connection->response.fileFD << std::endl;
-            std::cout << _return << std::endl;
             if (_return > 0)
             {
                 // std::cout << buffer << std::endl;

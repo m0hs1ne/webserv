@@ -20,6 +20,8 @@ class Request
 {
     public:
         size_t buffer_size;
+        size_t received;
+        int b;
         std::string method;
         std::string body;
         char *bodyStr;
@@ -30,6 +32,7 @@ class Request
         bool pathFound;
         std::map<std::string, std::string> attr;
         size_t size;
+        size_t bodySize;
         std::vector<Part> parts;
         std::map<std::string, std::string> data;
         bool ok;
@@ -55,6 +58,7 @@ class Request
 
         Request(): openedFd(-2), bFd(-2)
         {
+            this->received = 0;
             this->ended = false;
             this->fileName = "file_" + generateRandomString();
         };
