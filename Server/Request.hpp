@@ -25,6 +25,7 @@ class Request
         size_t chunkSize;
         std::string method;
         std::string body;
+        std::string chunkSize_chunked;
         char *bodyStr;
         std::map<std::string, std::string> formUrlEncoded;
         std::string path;
