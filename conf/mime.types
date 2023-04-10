@@ -18,7 +18,7 @@ application/vnd.ms-fontobject .eot
 application/epub+zip .epub
 application/gzip .gz
 image/gif .gif
-text/html .htm, .html
+text/html .html
 image/vnd.microsoft.icon .ico
 text/calendar .ics
 application/java-archive .jar
@@ -26,7 +26,7 @@ image/jpeg .jpeg, .jpg
 text/javascript .js
 application/json .json
 application/ld+json .jsonld
-audio/midi .mid, .midi
+audio/midi .midi
 text/javascript .mjs
 audio/mpeg .mp3
 video/mp4 .mp4
@@ -50,7 +50,7 @@ application/rtf .rtf
 application/x-sh .sh
 image/svg+xml .svg
 application/x-tar .tar
-image/tiff .tif, .tiff
+image/tiff .tiff
 video/mp2t .ts
 font/ttf .ttf
 text/plain .txt

@@ -129,7 +129,7 @@ std::string readFile(const std::string &file)
 {
     std::ifstream ifs(file);
     if (!ifs)
-        throw parsingException("Error opening file");
+        std::cout << "Error: " << file <<" not found" << std::endl;
     std::stringstream buffer;
     buffer << ifs.rdbuf();
     return buffer.str();

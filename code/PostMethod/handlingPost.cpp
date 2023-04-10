@@ -140,14 +140,14 @@ void fillFile(SocketConnection &connection)
             size = connection.request.bodySize;
         else
             size = connection.request.buffer_size;
-        std::cout << "bodySize : " << size << "| received : " << connection.request.received << "| length : " << len << std::endl;
         write(connection.request.openedFd, connection.request.body.c_str(), size);
+        connection.request.received += size;
+        std::cout << "bodySize : " << size << "| received : " << connection.request.received << "| length : " << len << std::endl;
         if (connection.request.received >= len)
         {
             close(connection.request.openedFd);
             connection.ended = true;
         }
-        connection.request.received += size;
     }
     connection.request.bodySize = 0;
 }
@@ -267,11 +267,8 @@ void handlingPost(SocketConnection &connection)
     }
     else
     {
-        if(connection.request.contentType.empty())
-            connection.request.contentType = "text/bin";
-        std::vector<std::string> arr = splitString(connection.request.contentType, "/", connection.request.contentType.size());
-        arr[1].erase(arr[1].find("\r"), arr[1].size());
-        connection.request.openedFd = open((uploadPath + "/" + connection.request.fileName + "." + arr[1]).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
+        std::string type = connection.server->typeToExt[connection.request.contentType.erase(0,1).erase(connection.request.contentType.size() - 1, 1)];
+        connection.request.openedFd = open((uploadPath + "/" + connection.request.fileName  + type).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
         if (connection.request.openedFd == -1)
         {
             connection.response.code = 500;
