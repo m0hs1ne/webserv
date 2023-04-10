@@ -139,8 +139,8 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
     if (filter == EVFILT_READ)
     {
         int ret = 0;
-        char buffer[2048] = {0};
-        ret = read(Connection->socket_fd, buffer, 2047);
+        char buffer[2001] = {0};
+        ret = read(Connection->socket_fd, buffer, 2000);
         if(ret == 0)
         {
             write(Connection->socket_fd, "hello", 5);
@@ -156,7 +156,6 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
             Connection->response.codeMsg = code;
             Connection->response = Connection->request.handleRequest(ft_strdup(buffer, ret), this->servers[0]);
         }
-        // std::cout << Connection->request.ok << std::endl;
         if (Connection->request.ok)
         {
             if (Connection->request.method == "POST")
@@ -177,7 +176,7 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
     }
     else if (filter == EVFILT_WRITE)
     {
-        char buffer[2048] = {0};
+        char buffer[2001] = {0};
         int _return;
 
         if (!Connection->response.response.empty())
@@ -188,7 +187,7 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         }
         else if (!Connection->response.returnFile.empty())
         {
-            _return = read(Connection->response.fileFD, buffer, 2047);
+            _return = read(Connection->response.fileFD, buffer, 2000);
             if (_return > 0)
             {
                 // std::cout << buffer << std::endl;

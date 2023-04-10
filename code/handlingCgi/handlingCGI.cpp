@@ -31,6 +31,108 @@ char **setEnv(Response response, Request &request, Server &server)
     return convertToCharArray(stdEnv);
 }
 
+void checkCGI(Request &request, Response &response, Server &server)
+{
+    std::string cgiExts = server.locations[response.location].cgi_extension[0];
+    std::string cgiPaths = server.locations[response.location].cgi_path;
+    int pipefd[2];
+    int postBodyfd[2];
+    pid_t pid;
+    char buffer[2048];
+    char *const args[] = {(char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL};
+    char **envp;
+
+
+    if (pipe(pipefd) == -1)
+    {
+        std::cerr << "Error creating pipe\n";
+        return;
+    }
+    if (request.method == "POST")
+    {
+        if (pipe(postBodyfd) == -1)
+        {
+            std::cerr << "Error creating pipe\n";
+            return;
+        }
+        write(postBodyfd[1], request.body.c_str(), request.body.size());
+        close(postBodyfd[1]);
+    }
+    envp = setEnv(response, request, server);
+    pid = fork();
+
+    if (pid == -1)
+    {
+        std::cerr << "Error forking process\n";
+        return;
+    }
+
+    if (pid == 0)
+    {
+        close(pipefd[0]);
+        if (request.method == "POST")
+        {
+            if (dup2(postBodyfd[0], STDIN_FILENO) == -1)
+            {
+                std::cerr << "Error redirecting standard input\n";
+                return;
+            }
+        }
+        std::cerr << "cgi done\n" << std::endl;
+        if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+        {
+            std::cerr << "Error redirecting standard output\n";
+            return;
+        }
+        if (execve(cgiPaths.c_str(), args, envp) == -1)
+        {
+            std::cerr << "Error executing command\n";
+            return;
+        }
+    }
+    else
+    {
+        freeCharArray(envp);
+        close(pipefd[1]);
+    
+        std::string header;
+        std::string *line;
+        std::string buf;
+        size_t n = 1;
+
+        while (n != 0)
+        {
+            n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
+            response.bodySize += n;
+            buffer[n] = '\0';
+            buf.append(buffer, n);
+        }
+
+        int i = 1;
+        size_t lineSize = 0;
+        size_t headerSize = 0;
+    
+        line = getLine(buf, 0, response.bodySize, &lineSize, "size");
+        while (!line->empty() && *line != "\r")
+        {
+            header.append(*line + "\n", lineSize);
+            headerSize += lineSize + 1;
+            line = getLine(buf, i, response.bodySize, &lineSize, "size");
+            i++;
+        }
+        headerSize += lineSize + 1;
+        buf.erase(0, headerSize);
+        response.bodySize -= headerSize;
+        response.cgiheader = header;
+        response.body = "";
+        response.body.append(buf.c_str(), response.bodySize);
+        close(pipefd[0]);
+        wait(NULL);
+    } 
+}
+
+
+
 // void checkCGI(Request request, Response &response, Server &server)
 // {
 //     std::string cgiExts = server.locations[response.location].cgi_extension[0];
@@ -98,95 +200,3 @@ char **setEnv(Response response, Request &request, Server &server)
 //         wait(NULL);
 //     }
 // }
-
-void checkCGI(Request &request, Response &response, Server &server)
-{
-    std::string cgiExts = server.locations[response.location].cgi_extension[0];
-    std::string cgiPaths = server.locations[response.location].cgi_path;
-    int pipefd[2];
-    int postBodyfd[2];
-    pid_t pid;
-    char buffer[2048];
-    char *const args[] = {(char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL};
-    char **envp;
-
-
-    if (pipe(pipefd) == -1)
-    {
-        std::cerr << "Error creating pipe\n";
-        return;
-    }
-    if (request.method == "POST")
-    {
-        if (pipe(postBodyfd) == -1)
-        {
-            std::cerr << "Error creating pipe\n";
-            return;
-        }
-        write(postBodyfd[1], request.body.c_str(), request.body.size());
-        close(postBodyfd[1]);
-    }
-    envp = setEnv(response, request, server);
-    pid = fork();
-
-    if (pid == -1)
-    {
-        std::cerr << "Error forking process\n";
-        return;
-    }
-
-    if (pid == 0)
-    {
-        close(pipefd[0]);
-        if (request.method == "POST")
-        {
-            if (dup2(postBodyfd[0], STDIN_FILENO) == -1)
-            {
-                std::cerr << "Error redirecting standard input\n";
-                return;
-            }
-        }
-        std::cerr << "cgi done\n" << std::endl;
-        if (dup2(pipefd[1], STDOUT_FILENO) == -1)
-        {
-            std::cerr << "Error redirecting standard output\n";
-            return;
-        }
-        if (execve(cgiPaths.c_str(), args, envp) == -1)
-        {
-            std::cerr << "Error executing command\n";
-            return;
-        }
-    }
-    else
-    {
-        freeCharArray(envp);
-        close(pipefd[1]);
-        std::string header;
-        std::string *line;
-        std::string buf;
-        size_t n = 1;
-        while (n != 0)
-        {
-            n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
-            response.bodySize += n;
-            buffer[n] = '\0';
-            for (size_t i = 0; i < n; i++)
-                buf.push_back(buffer[i]);
-        }
-        line = getLine(buf, 0, response.bodySize);
-        int i = 1;
-        while (!line->empty())
-        {
-            header += *line + "\r\n";
-            line = getLine(buf, i, response.bodySize);
-            i++;
-        }
-        buf.erase(0, header.size());
-        response.bodySize -= header.size();
-        response.cgiheader = header;
-        request.body.append(buf.c_str(), response.bodySize);
-        close(pipefd[0]);
-        wait(NULL);
-    }
-}

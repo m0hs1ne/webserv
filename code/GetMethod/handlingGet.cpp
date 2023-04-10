@@ -24,6 +24,7 @@ void handleDir(Request &request, Response &response, Server &server)
     {
         response.fullPath += server.locations[response.location].index;
         checkCGI(request, response, server);
+        return;
     }
     if (server.locations[response.location].autoindex)
     {
@@ -34,15 +35,12 @@ void handleDir(Request &request, Response &response, Server &server)
             response.bodySize = response.body.size();
         }
         else
-        {
             response.code = 403;
-        }
     }
 }
 
 bool isLocation(SocketConnection &connection)
 {
-    // std::cout << "----========== " << connection.server->locations[connection.response.location].name << std::endl;
     if (connection.request.path != "/" && \
         connection.server->locations[connection.response.location].name == connection.request.path)
         return true;

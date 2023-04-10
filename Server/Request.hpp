@@ -22,6 +22,7 @@ class Request
         size_t buffer_size;
         size_t received;
         int b;
+        size_t chunkSize;
         std::string method;
         std::string body;
         char *bodyStr;
@@ -58,6 +59,7 @@ class Request
 
         Request(): openedFd(-2), bFd(-2)
         {
+            this->chunkSize = 0;
             this->received = 0;
             this->ended = false;
             this->fileName = "file_" + generateRandomString();

@@ -172,7 +172,7 @@ std::string *getLine(std::string &src, size_t n, size_t size)
     return (ret);
 }
 
-std::string *getLine(std::string &src, size_t n, size_t size, size_t *len)
+std::string *getLine(std::string &src, size_t n, size_t size, size_t *len, std::string optional)
 {
     size_t i = 0;
     size_t j = 1;
@@ -195,7 +195,24 @@ std::string *getLine(std::string &src, size_t n, size_t size, size_t *len)
     //     i++;
     while (i + j < size && src[i + j] != '\n')
         j++;
-    *len = j;
+    if (optional == "size")
+        *len = j;
+    else if (optional == "pos")
+        *len = i;
+    *ret = std::string(src, i, j);
+    return (ret);
+}
+
+std::string *getLine(std::string &src, size_t n, size_t size, size_t pos)
+{
+    size_t i = pos;
+    size_t j = 1;
+    std::string *ret = new std::string();
+    (void)n;
+    // while (i < size && src[i] != '\n')
+    //     i++;
+    while (i + j < size && src[i + j] != '\n')
+        j++;
     *ret = std::string(src, i, j);
     return (ret);
 }

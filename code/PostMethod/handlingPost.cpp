@@ -1,4 +1,5 @@
 #include "../../includes/handlingPost.hpp"
+#include <algorithm>
 
 int skipUntilBody(std::string &str)
 {
@@ -61,12 +62,12 @@ void boundary(SocketConnection &connection)
     if (files.size() == 0)
     {
         write(connection.request.bFd, connection.request.body.c_str(), connection.request.body.size());
-        return ;
+        return;
     }
 
     // Body with boundaries in middle push the part before the boundary to the opened file
     // close the file and remove it from the vector
-    if (findByteByByte(connection.request.body, boundary, connection.request.buffer_size, boundary.size()) != 0 &&\
+    if (findByteByByte(connection.request.body, boundary, connection.request.buffer_size, boundary.size()) != 0 &&
         findByteByByte(connection.request.body, boundary, connection.request.buffer_size, boundary.size()) != std::string::npos)
     {
         write(connection.request.bFd, files[0].c_str(), files[0].size());
@@ -113,36 +114,122 @@ void boundary(SocketConnection &connection)
     connection.request.parts.clear();
 }
 
+int hexToDec(const std::string &hex)
+{
+    int dec;
+    std::stringstream ss(hex);
+    ss >> std::hex >> dec;
+    return dec;
+}
+
+int hexToDec(char hex)
+{
+    int dec;
+    std::stringstream ss(hex);
+    ss >> std::hex >> dec;
+    if (dec == 0 && hex != '0')
+        return -1;
+    return dec;
+}
+
 void fillFile(SocketConnection &connection)
 {
     std::string chunk;
-    size_t chunkSize;
     std::string *line;
     std::vector<std::string> splitArr;
+    std::string body = "";
+    size_t size = 0;
+    std::string chunkSize_chunked = "";
 
     if (connection.request.attr.find("Transfer-Encoding") != connection.request.attr.end() &&
-        connection.request.attr["Transfer-Encoding"] == " chunked")
+        connection.request.attr["Transfer-Encoding"] == " chunked\r")
     {
-        line = getLine(connection.request.body, 0, connection.request.buffer_size);
-        chunkSize = std::stoull(*line, nullptr, 16);
-        connection.request.body.erase(0,  line->size() + 1);
-        delete line;
-        if (chunkSize == 0)
-            connection.ended = true;
+        if (connection.request.bodySize)
+        {
+            size = connection.request.bodySize;
+            line = getLine(connection.request.body, 0, size);
+            connection.request.chunkSize = hexToDec(*line);
+            write(1, "\nbody : ", 8);
+            // write(1, connection.request.body.c_str(), size);
+            connection.request.body.erase(0, line->size() + 1);
+            std::cout << "linesize -> "<< line->size() << std::endl;
+            std::cout << "chunkedSi -> "<< connection.request.chunkSize  << std::endl;
+            size -= line->size() + 1;
+            write(1, "\nbody : ", 8);
+            // write(1, connection.request.body.c_str(), size);
+            delete line;
+            // exit÷(0);
+        }
         else
-            write(connection.request.openedFd, chunk.c_str(), chunkSize);
+            size = connection.request.buffer_size;
+        if (connection.request.body[size - 5] == '0')
+        {
+            std::string tmp = connection.request.body.substr(size - 5, 5);
+            if (tmp == "0\r\n\r\n")
+            {
+                connection.request.body.erase(size - 5, 5);
+                connection.ended = true;
+                size -= 5;
+            }
+        }
+        // if (!chunkSize_chunked.empty())
+        // {
+        //     line = getLine(connection.request.body, 0, size);
+        //     chunkSize_chunked += *line;
+        //     connection.request.chunkSize = hexToDec(chunkSize_chunked);
+        // }
+        if(connection.request.chunkSize >= size - 10 && connection.request.chunkSize <= size + 10)
+        {
+            if (connection.request.chunkSize >= size - 10)
+            {
+                chunkSize_chunked = connection.request.body.erase(connection.request.chunkSize, size);
+                size = connection.request.chunkSize;
+            }
+            else
+            {
+                chunkSize_chunked = connection.request.body.erase(size - 2, 2);
+                size -= 2;
+            }
+            std::cout << "---------b------------b" << std::endl;
+            exit(0);
+        }
+            // chunkSize_chunked += connection.request.body.erase(size - 2, 2);
+        else if (connection.request.chunkSize < size)
+        {
+            size_t old_size = connection.request.chunkSize;
+            // std::cout << "\n-------------------------------------=> size " << size << std::endl;
+            write(1, "\n----------------------------------\n", 37);
+            write(1, connection.request.body.c_str(), size);
+            write(1, "\n----------------------------------\n", 37);
+            line = getLine(connection.request.body, 0, size, connection.request.chunkSize + 2);
+            std::cout << "\n--------------line : " << *line << std::endl;
+            connection.request.body.erase(connection.request.chunkSize, line->size() + 3);
+            size -= line->size() + 3;
+            write(1, connection.request.body.c_str(), size);
+            write(1, "\n----------------------------------\n", 37);
+
+            std::cout <<"=========> Ch " << *line << std::endl;
+            connection.request.chunkSize = hexToDec(*line);
+            std::cout <<"=========> " << connection.request.chunkSize << std::endl;
+            connection.request.chunkSize -= size - old_size;
+            // std::cout << "\n-------------------------------------=> size " << size << std::endl;
+            delete line;
+        }
+        else
+            connection.request.chunkSize -= size;
+        write(connection.request.openedFd, connection.request.body.c_str(), size);
+        std::cout << "\nSize-> " << size << std::endl;
+        std::cout << "\nconnection.request.chunkSize: " << connection.request.chunkSize << std::endl;
     }
     else
     {
-        size_t len = std::stoll(connection.request.attr["Content-Length"]);
-        size_t size = 0;
+        size_t len = sToi(connection.request.attr["Content-Length"]);
         if (connection.request.bodySize)
             size = connection.request.bodySize;
         else
             size = connection.request.buffer_size;
         write(connection.request.openedFd, connection.request.body.c_str(), size);
         connection.request.received += size;
-        std::cout << "bodySize : " << size << "| received : " << connection.request.received << "| length : " << len << std::endl;
         if (connection.request.received >= len)
         {
             close(connection.request.openedFd);
@@ -173,11 +260,6 @@ void handlingPost(SocketConnection &connection)
     else if (connection.request.openedFd != -2)
     {
         fillFile(connection);
-        return;
-    }
-    else if (connection.request.bFd != -2)
-    {
-        boundary(connection);
         return;
     }
 
@@ -237,38 +319,10 @@ void handlingPost(SocketConnection &connection)
         std::string value = urlDecodeStr(*str);
         connection.request.formUrlEncoded[key] = value;
     }
-    else if (connection.request.contentType.find("multipart/form-data") != std::string::npos)
-    {
-        std::string boundary = connection.request.contentType.substr(connection.request.contentType.find("boundary=") + 9);
-        std::vector<std::string> files;
-        files = splitString(connection.request.body, boundary, connection.request.buffer_size);
-        for (size_t i = 0; i < files.size(); i++)
-        {
-            if (!files[i].empty())
-                parseMultiPart(files[i], connection.request);
-        }
-        for (size_t i = 0; i < connection.request.parts.size(); i++)
-        {
-            if (!connection.request.parts[i].filename.empty())
-            {
-                std::string file = uploadPath + "/" + connection.request.parts[i].filename;
-                connection.request.bFd = open(file.c_str(), O_RDWR | O_CREAT, 0777);
-                write(connection.request.bFd, connection.request.parts[i].body.c_str(), connection.request.parts[i].body.size());
-            }
-            else
-                connection.request.data[connection.request.parts[i].name] = connection.request.parts[i].body;
-            if (i + 1 != connection.request.parts.size())
-            {
-                close(connection.request.bFd);
-                connection.request.bFd = -2;
-            }
-        }
-        connection.request.parts.clear();
-    }
     else
     {
-        std::string type = connection.server->typeToExt[connection.request.contentType.erase(0,1).erase(connection.request.contentType.size() - 1, 1)];
-        connection.request.openedFd = open((uploadPath + "/" + connection.request.fileName  + type).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
+        std::string type = connection.server->typeToExt[connection.request.contentType.erase(0, 1).erase(connection.request.contentType.size() - 1, 1)];
+        connection.request.openedFd = open((uploadPath + "/" + connection.request.fileName + type).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
         if (connection.request.openedFd == -1)
         {
             connection.response.code = 500;

@@ -22,7 +22,7 @@ text/html .html
 image/vnd.microsoft.icon .ico
 text/calendar .ics
 application/java-archive .jar
-image/jpeg .jpeg, .jpg
+image/jpeg .jpeg
 text/javascript .js
 application/json .json
 application/ld+json .jsonld

@@ -70,7 +70,7 @@ void ParseFirstLine(std::string &buffer, Request &req)
     std::string *line;
     size_t l_size = 0;
 
-    line = getLine(buffer, 0, req.buffer_size, &l_size);
+    line = getLine(buffer, 0, req.buffer_size, &l_size, "size");
     req.headerSize += l_size;
     splitArr = split(*line, ' ', 0);
     delete line;
@@ -90,7 +90,7 @@ void ParseHeaderAttr(std::string &buffer, Request &req)
     std::string *line;
     size_t l_size = 0;
 
-    line = getLine(buffer, 1, req.buffer_size, &l_size);
+    line = getLine(buffer, 1, req.buffer_size, &l_size, "size");
     req.headerSize += l_size;
     for (int i = 2; !line->empty(); i++)
     {
@@ -99,7 +99,7 @@ void ParseHeaderAttr(std::string &buffer, Request &req)
         splitArr = split(*line, ':', 1);
         delete line;
         req.attr[splitArr[0]] = splitArr[1];
-        line = getLine(buffer, i, req.buffer_size, &l_size);
+        line = getLine(buffer, i, req.buffer_size, &l_size, "size");
         req.headerSize += l_size;
     }
     delete line;
@@ -121,7 +121,7 @@ void Request::fillRequest(const std::string &buffer)
 
 bool Request::isRequestWellFormed(Response &response, Server &server)
 {
-    if (this->attr.find("Transfer-Encoding") != this->attr.end() && this->attr["Transfer-Encoding"] != " chunked")
+    if (this->attr.find("Transfer-Encoding") != this->attr.end() && this->attr["Transfer-Encoding"] != " chunked\r")
         response.code = 501;
     else if (this->attr.find("Transfer-Encoding") == this->attr.end() &&
              this->attr.find("Content-Length") == this->attr.end() &&
@@ -189,7 +189,6 @@ bool Request::matchLocation(Response &response, Server &server)
     response.location = location;
     checkPathFound(response, server);
     checkRedirection(response, server);
-
     return true;
 }
 
