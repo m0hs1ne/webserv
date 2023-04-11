@@ -49,9 +49,7 @@ void WebServ::RunServer()
     {
         size_t kq_return = 0;
         struct kevent revents[10];
-        //usleep(1000);
         kq_return = kevent(this->kq, 0, 0, revents, 10, &timeout);
-        // std::cout << "waiting for new connections" << std::endl;
         if (kq_return < 0)
         {
             perror("failed");
@@ -59,11 +57,10 @@ void WebServ::RunServer()
         }
         if (kq_return == 0)
         {
-            // std::cout << "timed out\n"
-            //           << std::endl;
+            std::cout << "timed out\n"
+                      << std::endl;
             continue;
         }
-        // std::cout << "kq return --> " << kq_return << std::endl;
         CheckEvents(revents, kq_return);
     }
 }

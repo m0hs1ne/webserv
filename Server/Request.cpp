@@ -45,23 +45,27 @@ bool Request::urlDecode(Response &response)
 void fillPostBody(std::string &buffer, Request &req)
 {
     std::string buf_tmp = "";
-    size_t size = req.buffer_size - req.headerSize;
+    size_t size = req.buffer_size - (req.headerSize);
 
     buf_tmp.append(buffer.c_str(), req.buffer_size);
     buf_tmp.erase(0, req.headerSize);
+    req.body.clear();
     req.body.append(buf_tmp.c_str(), size);
-    std::string *line = getLine(req.body, 0, size);
-    for (int i = 1; (*line) == "\r"; i++)
-    {
-        req.body.erase(0, 2);
-        size -= 2;
-        delete line;
-        line = getLine(req.body, i, size);
-    }
-    delete line;
-    req.body.erase(0, 5);
-    size -= 5;
+    // std:÷:cout << "body : " << req.body << std::endl;
+    //exit(0);
+    // std::string *line = getLine(req.body, 0, size);
+    // for (int i = 1; (*line) == "\r"; i++)
+    // {
+    //     req.body.erase(0, 2);
+    //     size -= 2;
+    //     delete line;
+    //     line = getLine(req.body, i, size);
+    // }
+    // delete line;
+    // req.body.erase(0, 5);
+    // size -= 5;
     req.bodySize = size;
+    //exit(0);
 }
 
 void ParseFirstLine(std::string &buffer, Request &req)
@@ -71,7 +75,8 @@ void ParseFirstLine(std::string &buffer, Request &req)
     size_t l_size = 0;
 
     line = getLine(buffer, 0, req.buffer_size, &l_size, "size");
-    req.headerSize += l_size;
+    req.headerSize += l_size + 1;
+    std::cout << "= " << l_size + 1 << "- " << *line << std::endl;
     splitArr = split(*line, ' ', 0);
     delete line;
     req.method = splitArr[0];
@@ -91,7 +96,7 @@ void ParseHeaderAttr(std::string &buffer, Request &req)
     size_t l_size = 0;
 
     line = getLine(buffer, 1, req.buffer_size, &l_size, "size");
-    req.headerSize += l_size;
+    req.headerSize += l_size + 1;
     for (int i = 2; !line->empty(); i++)
     {
         if(line->size() == 1 && (*line)[0] == '\r')
@@ -100,8 +105,10 @@ void ParseHeaderAttr(std::string &buffer, Request &req)
         delete line;
         req.attr[splitArr[0]] = splitArr[1];
         line = getLine(buffer, i, req.buffer_size, &l_size, "size");
-        req.headerSize += l_size;
+        req.headerSize += l_size + 1;
     }
+    
+    std::cout << "headerSize: " << req.headerSize << std::endl;
     delete line;
 }
 
