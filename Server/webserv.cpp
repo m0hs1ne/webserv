@@ -139,8 +139,8 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
     if (filter == EVFILT_READ)
     {
         int ret = 0;
-        char buffer[2001] = {0};
-        ret = read(Connection->socket_fd, buffer, 2000);
+        char buffer[4001] = {0};
+        ret = read(Connection->socket_fd, buffer, 4000);
         if(ret == 0)
         {
             write(Connection->socket_fd, "hello", 5);
@@ -176,7 +176,7 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
     }
     else if (filter == EVFILT_WRITE)
     {
-        char buffer[2001] = {0};
+        char buffer[4001] = {0};
         int _return;
 
         if (!Connection->response.response.empty())
@@ -187,7 +187,7 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         }
         else if (!Connection->response.returnFile.empty())
         {
-            _return = read(Connection->response.fileFD, buffer, 2000);
+            _return = read(Connection->response.fileFD, buffer, 4000);
             if (_return > 0)
             {
                 // std::cout << buffer << std::endl;

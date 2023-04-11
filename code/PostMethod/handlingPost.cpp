@@ -139,7 +139,7 @@ void fillFile(SocketConnection &connection)
     std::vector<std::string> splitArr;
     std::string body = "";
     size_t size = 0;
-    std::string &chunkSize_chunked = connection.request.chunkSize_chunked;
+    //std::string &chunkSize_chunked = connection.request.chunkSize_chunked;
 
     if (connection.request.attr.find("Transfer-Encoding") != connection.request.attr.end() &&
         connection.request.attr["Transfer-Encoding"] == " chunked\r")
@@ -149,19 +149,13 @@ void fillFile(SocketConnection &connection)
             size = connection.request.bodySize;
             line = getLine(connection.request.body, 0, size);
             connection.request.chunkSize = hexToDec(*line);
-            write(1, "\nbody : ", 8);
-            // write(1, connection.request.body.c_str(), size);
             connection.request.body.erase(0, line->size() + 1);
-            std::cout << "linesize -> "<< line->size() << std::endl;
-            std::cout << "chunkedSi -> "<< connection.request.chunkSize  << std::endl;
             size -= line->size() + 1;
-            write(1, "\nbody : ", 8);
-            // write(1, connection.request.body.c_str(), size);
             delete line;
-            // exit÷(0);
         }
         else
             size = connection.request.buffer_size;
+        size += connection.request.chunkSize_chunked;
         if (connection.request.body[size - 5] == '0')
         {
             std::string tmp = connection.request.body.substr(size - 5, 5);
@@ -172,81 +166,25 @@ void fillFile(SocketConnection &connection)
                 size -= 5;
             }
         }
-        
-        // 2 - chunkSize_chunked is set
-        if (!chunkSize_chunked.empty())
+        if (connection.request.chunkSize >= size - 50 && connection.request.chunkSize < size)
         {
-            //getfirst line
-            line = getLine(connection.request.body, 0, size);
-            //add it to the chunkSize_chunked
-            chunkSize_chunked += *line;
-            //and convert it to dec
-            connection.request.chunkSize = hexToDec(chunkSize_chunked);
-            //if the chunkSize is converted successfully
-            if (connection.request.chunkSize == 0)
-            {
-                //do something here
-            }
-            delete line;
-        }
-        // 1 - if chunksize less than the size of the body with 10 bytes
-        if (connection.request.chunkSize >= size - 10 && connection.request.chunkSize < size)
-        {
-            //loop on the 10 bytes to check for \r
-            for (size_t i = size - 10; i < size; i++)
-            {
-                //if Found \r
-                if (connection.request.body[i] == '\r')
-                {
-                    //check for newline
-                    if (i + 1 < size && connection.request.body[i + 1] == '\n')
-                    {
-                        //increment to bypass the newline
-                        i++;
-                        size_t j;
-                        //loop on the rest of bytes to check for the second \r
-                        for (j = i; j < size && connection.request.body[j] != '\r'; j++);
-                        //check for second newline
-                        if (j + 1 < size && connection.request.body[j + 1] == '\n')
-                        {
-                            //increment to bypass the second newline
-                            j++;
-                        }
-                        //erase the bytes from the body and return them to chunkSize_chunked
-                        chunkSize_chunked = connection.request.body.erase(i, j);
-                        size -= j;
-                        break;
-                    }
-                }
-            }
+            connection.request.chunkSize_chunked = size;
+            return;
         }
         if (connection.request.chunkSize <= size)
         {
-
             size_t old_size = connection.request.chunkSize;
-            // std::cout << "\n-------------------------------------=> size " << size << std::endl;
-            write(1, "\n----------------------------------\n", 37);
-            write(1, connection.request.body.c_str(), size);
-            write(1, "\n----------------------------------\n", 37);
             line = getLine(connection.request.body, 0, size, connection.request.chunkSize + 2);
-            std::cout << "\n--------------line : " << *line << std::endl;
             connection.request.body.erase(connection.request.chunkSize, line->size() + 3);
             size -= line->size() + 3;
-            write(1, connection.request.body.c_str(), size);
-            write(1, "\n----------------------------------\n", 37);
-
-            std::cout <<"=========> Ch " << *line << std::endl;
             connection.request.chunkSize = hexToDec(*line);
-            std::cout <<"=========> " << connection.request.chunkSize << std::endl;
             connection.request.chunkSize -= size - old_size;
-            // std::cout << "\n-------------------------------------=> size " << size << std::endl;
             delete line;
         }
         else
             connection.request.chunkSize -= size;
         write(connection.request.openedFd, connection.request.body.c_str(), size);
-        std::cout << "\nSize-> " << size << std::endl;
-        std::cout << "\nconnection.request.chunkSize: " << connection.request.chunkSize << std::endl;
+        connection.request.chunkSize_chunked = 0;
     }
     else
     {
@@ -258,12 +196,13 @@ void fillFile(SocketConnection &connection)
         write(connection.request.openedFd, connection.request.body.c_str(), size);
         connection.request.received += size;
         if (connection.request.received >= len)
-        {
-            close(connection.request.openedFd);
             connection.ended = true;
-        }
     }
+    if (connection.ended)
+        close(connection.request.openedFd);
     connection.request.bodySize = 0;
+   
+    connection.request.body.clear();
 }
 
 void handlingPost(SocketConnection &connection)

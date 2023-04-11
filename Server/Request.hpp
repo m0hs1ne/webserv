@@ -25,7 +25,7 @@ class Request
         size_t chunkSize;
         std::string method;
         std::string body;
-        std::string chunkSize_chunked;
+        size_t chunkSize_chunked;
         char *bodyStr;
         std::map<std::string, std::string> formUrlEncoded;
         std::string path;
@@ -60,6 +60,7 @@ class Request
 
         Request(): openedFd(-2), bFd(-2)
         {
+            this->chunkSize_chunked = 0;
             this->chunkSize = 0;
             this->received = 0;
             this->ended = false;

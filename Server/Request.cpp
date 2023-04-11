@@ -262,7 +262,16 @@ Response Request::handleRequest(char *buffer, Server &server)
     else
     {
         this->method = "POST";
-        this->body.clear();
+        if(!this->body.empty())
+        {
+            write(1, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n1------------------------------------------------------------------------------------------\n", 113);
+            write(1, this->body.c_str(), this->chunkSize_chunked);
+            write(1, "\n2------------------------------------------------------------------------------------------\n\n\n", 96);
+            this->body.append(buffer, this->buffer_size);
+            write(1, "\n\n\n1------------------------------------------------------------------------------------------\n", 96);
+            write(1, this->body.c_str(), this->chunkSize_chunked + this->buffer_size);
+            write(1, "\n2------------------------------------------------------------------------------------------\n\n\n", 96);
+        }
         this->body.append(buffer, this->buffer_size);
         Response response;
         response.code = 200;
