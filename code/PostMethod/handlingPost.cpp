@@ -149,32 +149,39 @@ void fillFile(SocketConnection &connection)
             size = connection.request.bodySize;
             line = getLine(connection.request.body, 0, size);
             connection.request.chunkSize = hexToDec(*line);
-            connection.request.body.erase(0, line->size() + 1);
-            size -= line->size() + 1;
+            // write(1, "\nen : ", 8);
+            connection.request.body.erase(0, line->size() + 2);
+            size -= line->size() + 2;
             delete line;
         }
         else
             size = connection.request.buffer_size;
         size += connection.request.chunkSize_chunked;
+        std::cout << "---> " << connection.request.chunkSize << "---> " << size << std::endl;
         if (connection.request.body[size - 5] == '0')
         {
             std::string tmp = connection.request.body.substr(size - 5, 5);
             if (tmp == "0\r\n\r\n")
             {
+                write(1, "End Of Process\n", 15);
                 connection.request.body.erase(size - 5, 5);
                 connection.ended = true;
+                write(connection.request.openedFd, connection.request.body.c_str(), size);
+                return ;
                 size -= 5;
             }
         }
-        if (connection.request.chunkSize >= size - 50 && connection.request.chunkSize < size)
+        if (connection.request.chunkSize >= size - 50 && connection.request.chunkSize < size && connection.ended != true)
         {
+            std::cout << "connection.request.chunkSize >= size - 50 && connection.request.chunkSize < size" << std::endl;
             connection.request.chunkSize_chunked = size;
             return;
         }
-        if (connection.request.chunkSize <= size)
+        else if (connection.request.chunkSize < size)
         {
             size_t old_size = connection.request.chunkSize;
             line = getLine(connection.request.body, 0, size, connection.request.chunkSize + 2);
+            std::cout << "ana hna" << *line << std::endl;
             connection.request.body.erase(connection.request.chunkSize, line->size() + 3);
             size -= line->size() + 3;
             connection.request.chunkSize = hexToDec(*line);
@@ -182,7 +189,10 @@ void fillFile(SocketConnection &connection)
             delete line;
         }
         else
+        {
+            std::cout << "else" << std::endl;
             connection.request.chunkSize -= size;
+        }
         write(connection.request.openedFd, connection.request.body.c_str(), size);
         connection.request.chunkSize_chunked = 0;
     }

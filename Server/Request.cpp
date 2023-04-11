@@ -271,8 +271,10 @@ Response Request::handleRequest(char *buffer, Server &server)
             write(1, "\n\n\n1------------------------------------------------------------------------------------------\n", 96);
             write(1, this->body.c_str(), this->chunkSize_chunked + this->buffer_size);
             write(1, "\n2------------------------------------------------------------------------------------------\n\n\n", 96);
+            // exit(0);
         }
-        this->body.append(buffer, this->buffer_size);
+        else
+            this->body.append(buffer, this->buffer_size);
         Response response;
         response.code = 200;
         return response;
