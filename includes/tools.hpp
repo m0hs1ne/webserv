@@ -43,7 +43,7 @@ size_t sToi(const std::string &str);
 std::string itos(size_t n);
 std::string toUpper(std::string str);
 int isDir(const char *pathname);
-std::string urlDecodeStr(std::string &str);
+std::string urlDecodeStr(std::string str);
 void freeCharArray(char** charArray);
 void initHttpCode(std::map<int, std::string> &code);
 std::string generateRandomString();

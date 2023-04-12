@@ -27,7 +27,7 @@ public:
         std::string index;
         std::vector<std::string> cgi_extension;
         std::string return_pages;
-        std::string cgi_path;
+        std::vector<std::string> cgi_path;
         bool upload_enable;
         std::string upload_path;
         size_t client_max_body_size;

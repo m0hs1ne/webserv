@@ -6,6 +6,8 @@ Response::Response()
     this->bodySize = 0;
     this->code = 200;
     this->returnFile = "";
+    this->mNotAllow = false;
+    this->fileFD = -2;
 }
 
 Response::Response(const Response& other)
@@ -21,6 +23,7 @@ std::map<int, std::string> Response::initHttpCode()
     code[500] = "500 Internal Server Error";
     code[414] = "414 Request-URI Too Long";
     code[413] = "413 Request Entity Too Large";
+    code[411] = "411 Length Required";
     code[409] = "409 Conflict";
     code[405] = "405 Method Not Allowed";
     code[404] = "404 Not Found";
@@ -47,6 +50,7 @@ Response& Response::operator=(const Response& other)
     this->bodySize = other.bodySize;
     this->type = other.type;
     this->cgiheader = other.cgiheader;
+    this->mNotAllow = other.mNotAllow;
     return *this;
 }
 
@@ -63,7 +67,7 @@ void formPostResponse(Response &response, Server &server)
     response.response = "HTTP/1.1 ";
     response.response += code[response.code] + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
-    response.response += "Content-Type: text/html\r\n";
+    response.response += "Content-Type: text/html\r\n\r\n";
 }
 
 void formDeleteResponse(Response &response, Server &server)
@@ -91,18 +95,17 @@ void formGetResponse(Response &response, Server &server)
         response.returnFile = server.error_pages[response.code];
     std::string ext = "." + response.returnFile.substr(response.returnFile.find_last_of(".") + 1);
     std::string type = server.extToType[ext];
-    if (type.empty())
+    if (type.empty() || type == "application/x-httpd-php")
         type = "text/html";
     if (response.body.empty() &&
         response.redirect.empty() &&
-        (response.returnFile.empty()|| response.code == 404 || access(response.returnFile.c_str(), R_OK)))
+        (response.returnFile.empty() || response.mNotAllow || response.code == 404 || access(response.returnFile.c_str(), R_OK)))
     {
         response.body = code[response.code];
         fileSize = response.body.size();
     }
-    else if (response.body.empty() && !response.returnFile.empty() && isDir(response.returnFile.c_str()) != -1)
+    else if (response.body.empty() && !response.returnFile.empty() && isDir(response.returnFile.c_str()) != -1 && response.code == 200)
     {
-
         response.fileFD = open(response.returnFile.c_str(), O_RDWR);
         if(response.fileFD < 0)
             response.code = 500;

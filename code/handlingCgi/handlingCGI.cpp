@@ -19,22 +19,31 @@ char **setEnv(Response response, Request &request, Server &server)
         stdEnv.push_back("QUERY_STRING=" + request.query);
     else if (request.method == "POST")
     {
-        stdEnv.push_back("CONTENT_LENGTH=" + request.attr["CONTENT_LENGTH"]);
-        stdEnv.push_back("CONTENT_TYPE=" + request.attr["CONTENT_TYPE"]);
+        std::stringstream out;
+		out << request.body.length();
+        stdEnv.push_back("CONTENT_LENGTH=" + out.str());
+        if (request.attr.find("CONTENT_TYPE") != request.attr.end())
+            stdEnv.push_back("CONTENT_TYPE=" + request.attr["CONTENT_TYPE"]);
     }
+    if (request.attr.find("HTTP_COOKIE") != request.attr.end())
+        stdEnv.push_back("HTTP_COOKIE=" + request.attr["HTTP_COOKIE"]);
+    stdEnv.push_back("SERVER_PROTOCOL=HTTP/1.1");
     stdEnv.push_back("GATEWAY_INTERFACE=CGI/1.1");
     stdEnv.push_back("REQUEST_METHOD=" + request.method);
     stdEnv.push_back("SERVER_PORT=" + itos(server.port));
-    stdEnv.push_back("REDIRECT_STATUS=" + itos(200));
+    stdEnv.push_back("REDIRECT_STATUS=200");
     stdEnv.push_back("PATH_INFO=" + request.path);
     stdEnv.push_back("PATH_TRANSLATED=" + response.fullPath);
+    stdEnv.push_back("SERVER_SOFTWARE=webserv/1.0");
     return convertToCharArray(stdEnv);
 }
 
 void checkCGI(Request &request, Response &response, Server &server)
 {
     std::string cgiExts = server.locations[response.location].cgi_extension[0];
-    std::string cgiPaths = server.locations[response.location].cgi_path;
+    std::string cgiPaths = server.locations[response.location].cgi_path[0];
+    std::cout <<"CGII " << cgiPaths << std::endl;
+    //std::string cgiPaths = "/usr/bin/pyhton3";
     int pipefd[2];
     int postBodyfd[2];
     pid_t pid;
@@ -42,6 +51,10 @@ void checkCGI(Request &request, Response &response, Server &server)
     char *const args[] = {(char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL};
     char **envp;
 
+    int			saveStdin;
+	int			saveStdout;
+    saveStdin = dup(STDIN_FILENO);
+	saveStdout = dup(STDOUT_FILENO);
 
     if (pipe(pipefd) == -1)
     {
@@ -99,6 +112,7 @@ void checkCGI(Request &request, Response &response, Server &server)
         std::string *line;
         std::string buf;
         size_t n = 1;
+        std::map<int, std::string> codeMsg = response.initHttpCode();
 
         while (n != 0)
         {
@@ -107,7 +121,16 @@ void checkCGI(Request &request, Response &response, Server &server)
             buffer[n] = '\0';
             buf.append(buffer, n);
         }
-
+        if(response.bodySize == 0)
+        {
+            buf.append("HTTP/1.1 " + codeMsg[500] + "\r\n");
+            buf.append("Content-Type: text/html\r\n");
+            buf.append("Content-Length: 52\r\n");
+            buf.append("\r\n");
+            buf.append("<h1>500 Internal Error</h1>\r\n");
+            buf.append("Error executing CGI\n");
+            response.bodySize = buf.size();
+        }
         int i = 1;
         size_t lineSize = 0;
         size_t headerSize = 0;
@@ -120,12 +143,16 @@ void checkCGI(Request &request, Response &response, Server &server)
             line = getLine(buf, i, response.bodySize, &lineSize, "size");
             i++;
         }
+        std::cout << "buf: " << headerSize << " size : " << buf.size() <<std::endl;
         headerSize += lineSize + 1;
         buf.erase(0, headerSize);
         response.bodySize -= headerSize;
         response.cgiheader = header;
         response.body = "";
-        response.body.append(buf.c_str(), response.bodySize);
+        if (!buf.empty())
+            response.body.append(buf.c_str(), response.bodySize);
+        dup2(saveStdin, STDIN_FILENO);
+	    dup2(saveStdout, STDOUT_FILENO);
         close(pipefd[0]);
         wait(NULL);
     } 

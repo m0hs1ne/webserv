@@ -228,7 +228,13 @@ void parsingConfig::parseLocProp(const std::string &src, size_t n, location &l)
             l.cgi_extension.push_back(line[i]);
     }
     if (line[0] == locProp[5])
-        l.cgi_path = line[1];
+    {
+        for (size_t i = 1; i < line.size(); ++i)
+        {
+            std::cout << "LINEEEE : " << line[i] << std::endl;
+            l.cgi_path.push_back(line[i]);
+        }
+    }
     if (line[0] == locProp[6])
     {
         if (line[1] == "on")
@@ -446,7 +452,7 @@ void parsingConfig::print()
 			for (size_t j = 0; j < it2->cgi_extension.size(); ++j)
 				std::cout << it2->cgi_extension[j] << " ";
 			std::cout << std::endl;
-			std::cout << "     * cgi_path: " << it2->cgi_path << std::endl;
+			std::cout << "     * cgi_path: " << it2->cgi_path[0] << std::endl;
 			std::cout << "     * autoindex: " << it2->autoindex << std::endl;
 			std::cout << "     * upload_enable: " << it2->upload_enable << std::endl;
 			std::cout << "     * upload_path: " << it2->upload_path << std::endl;

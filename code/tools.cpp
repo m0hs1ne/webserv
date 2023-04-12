@@ -73,7 +73,7 @@ void freeCharArray(char **charArray)
     delete[] charArray;
 }
 
-std::string urlDecodeStr(std::string &str)
+std::string urlDecodeStr(std::string str)
 {
     std::ostringstream decoded;
     std::string rslt;

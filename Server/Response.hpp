@@ -23,6 +23,7 @@ class Response
         std::string redirect;
         std::string cgiheader;
         std::map<int, std::string> *codeMsg;
+        bool mNotAllow;
 
         Response();
         Response(const Response& other);

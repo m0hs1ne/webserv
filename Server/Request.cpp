@@ -51,21 +51,7 @@ void fillPostBody(std::string &buffer, Request &req)
     buf_tmp.erase(0, req.headerSize);
     req.body.clear();
     req.body.append(buf_tmp.c_str(), size);
-    // std:÷:cout << "body : " << req.body << std::endl;
-    //exit(0);
-    // std::string *line = getLine(req.body, 0, size);
-    // for (int i = 1; (*line) == "\r"; i++)
-    // {
-    //     req.body.erase(0, 2);
-    //     size -= 2;
-    //     delete line;
-    //     line = getLine(req.body, i, size);
-    // }
-    // delete line;
-    // req.body.erase(0, 5);
-    // size -= 5;
     req.bodySize = size;
-    //exit(0);
 }
 
 void ParseFirstLine(std::string &buffer, Request &req)
@@ -222,7 +208,7 @@ void Request::checkRedirection(Response &response, Server &server)
     }
     else if (!server.locations[response.location].index.empty() &&\
              response.returnFile.empty() &&\
-            response.fullPath[response.fullPath.size() - 1] == '/')
+            response.fullPath[response.fullPath.size() - 1] == '/' && this->method == "GET")
     {
         response.code = 200;
         response.returnFile = response.root + server.locations[response.location].index;
@@ -240,6 +226,7 @@ bool Request::methodAllowed(Response &response, Server &server)
             return true;
     }
     response.code = 405;
+    response.mNotAllow = true;
     return false;
 }
 

@@ -19,7 +19,10 @@ void handleDir(Request &request, Response &response, Server &server)
         return;
     }
     if (!server.locations[response.location].cgi_extension.empty() &&
-        request.path.substr(request.path.find_last_of(".") + 1) == server.locations[response.location].cgi_extension[0] &&
+        find(server.locations[response.location].cgi_extension.begin(),\
+             server.locations[response.location].cgi_extension.end(),\
+             request.path.substr(request.path.find_last_of(".") + 1)) !=  \
+             server.locations[response.location].cgi_extension.end() &&\
         !access((response.fullPath + server.locations[response.location].index).c_str(), R_OK))
     {
         response.fullPath += server.locations[response.location].index;
