@@ -215,7 +215,7 @@ void Request::checkRedirection(Response &response, Server &server)
     }
     else if (!server.locations[response.location].index.empty() &&\
              response.returnFile.empty() &&\
-            response.fullPath[response.fullPath.size() - 1] == '/')
+            response.fullPath[response.fullPath.size() - 1] == '/' && this->method == "GET")
     {
         response.code = 200;
         response.returnFile = response.root + server.locations[response.location].index;
@@ -233,6 +233,7 @@ bool Request::methodAllowed(Response &response, Server &server)
             return true;
     }
     response.code = 405;
+    response.mNotAllow = true;
     return false;
 }
 

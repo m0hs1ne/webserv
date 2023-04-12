@@ -49,7 +49,7 @@ void WebServ::RunServer()
     {
         size_t kq_return = 0;
         struct kevent revents[10];
-        //usleep(1000);
+        // usleep(1000);
         kq_return = kevent(this->kq, 0, 0, revents, 10, &timeout);
         // std::cout << "waiting for new connections" << std::endl;
         if (kq_return < 0)
@@ -130,26 +130,30 @@ int WebServ::AcceptNewConnections(SocketConnection *Socket)
 
 size_t fullsize = 0;
 
-void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t  filter)
+void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t filter)
 {
     std::map<int, std::string> *code = new std::map<int, std::string>;
     initHttpCode(*code);
-    struct  kevent event[2];
-    
+    struct kevent event[2];
+
     if (filter == EVFILT_READ)
     {
         int ret = 0;
         char buffer[4001] = {0};
         ret = read(Connection->socket_fd, buffer, 4000);
-        if(ret == 0)
+        if (ret == 0)
         {
             write(Connection->socket_fd, "hello", 5);
             close(Connection->socket_fd);
+            EV_SET(&event[0], Connection->socket_fd, EVFILT_READ, EV_ADD | EV_DELETE, 0, 0, reinterpret_cast<void *>(Connection));
+            kevent(this->kq, event, 2, 0, 0, 0);
+            return ;
         }
         buffer[ret] = '\0';
         fullsize += ret;
         // std::cout << "fullsize --> " << fullsize << " | ";
-        //std::cout << buffer << std::endl;
+        std::cout << "========" << buffer << std::endl;
+        std::cout << "-----------" << std::endl;
         Connection->request.buffer_size = ret;
         if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
         {
@@ -165,12 +169,14 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
             else if (Connection->request.method == "DELETE")
                 handlingDelete(*Connection); // DELETE
         }
+        else 
+            Connection->ended = true;
         Connection->response.formResponse(Connection->request.method, *(Connection->server));
         if (Connection->ended)
         {
-            // std::cou÷t 
-            EV_SET(&event[0],  Connection->socket_fd, EVFILT_READ, EV_ADD | EV_DELETE, 0, 0, reinterpret_cast<void *>(Connection));
-            EV_SET(&event[1],  Connection->socket_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void *>(Connection));
+            // std::cou÷t
+            EV_SET(&event[0], Connection->socket_fd, EVFILT_READ, EV_ADD | EV_DELETE, 0, 0, reinterpret_cast<void *>(Connection));
+            EV_SET(&event[1], Connection->socket_fd, EVFILT_WRITE, EV_ADD | EV_ENABLE, 0, 0, reinterpret_cast<void *>(Connection));
             kevent(this->kq, event, 2, 0, 0, 0);
         }
     }
@@ -185,12 +191,11 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
             write(Connection->socket_fd, Connection->response.response.c_str(), Connection->response.response.size());
             Connection->response.response.clear();
         }
-        else if (!Connection->response.returnFile.empty())
+        else if (Connection->response.fileFD != -2)
         {
             _return = read(Connection->response.fileFD, buffer, 4000);
             if (_return > 0)
             {
-                // std::cout << buffer << std::endl;
                 write(Connection->socket_fd, buffer, _return);
             }
             else
@@ -219,12 +224,12 @@ int WebServ::CheckEvents(struct kevent *revents, size_t kq_return)
     {
         // std::cout << "0\n";
         SocketConnection *Connection = reinterpret_cast<SocketConnection *>(revents[i].udata);
-        if(Connection->IsPortSocket)
+        if (Connection->IsPortSocket)
         {
             AcceptNewConnections(Connection);
             // std::cout << "1\n";
         }
-        else if(!Connection->IsPortSocket)
+        else if (!Connection->IsPortSocket)
         {
             HandleEstablishedConnections(Connection, revents[i].filter);
             // std::cout << "2\n";m

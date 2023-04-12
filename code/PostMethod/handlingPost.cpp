@@ -285,14 +285,17 @@ void handlingPost(SocketConnection &connection)
     if (connection.request.attr.find("Content-Length") != connection.request.attr.end())
         contentLength = connection.request.attr["Content-Length"];
 
+    if(contentLength == " 0\r")
+    {
+        connection.response.code = 411;
+        connection.ended = true;
+        return;
+    }
+
     if (connection.request.contentType.find("application/x-www-form-urlencoded") != std::string::npos)
     {
-        std::string *str = new std::string("");
-        str->append(connection.request.body.substr(0, findByteByByte(connection.request.body, "=", connection.request.buffer_size, sizeof("="))));
-        std::string key = urlDecodeStr(*str);
-        str->clear();
-        str->append(connection.request.body.substr(connection.request.body.find("=") + 1));
-        std::string value = urlDecodeStr(*str);
+        std::string key = urlDecodeStr(connection.request.body.substr(0, connection.request.body.find("=")));
+        std::string value = urlDecodeStr(connection.request.body.substr(connection.request.body.find("=") + 1));
         connection.request.formUrlEncoded[key] = value;
     }
     else
@@ -310,4 +313,5 @@ void handlingPost(SocketConnection &connection)
         return;
     }
     connection.response.code = 201;
+    connection.ended = true;
 }
