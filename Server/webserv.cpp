@@ -100,6 +100,7 @@ void WebServ::SetUpSockets()
             perror("listen");
             exit(EXIT_FAILURE);
         }
+        fcntl(Socket->socket_fd, F_SETFL, O_NONBLOCK);
         std::cout << "Listening on port " << servers[i].port << std::endl;
         EV_SET(&event, Socket->socket_fd, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, reinterpret_cast<void *>(Socket));
         kevent(this->kq, &event, 1, 0, 0, 0);
@@ -119,7 +120,7 @@ int WebServ::AcceptNewConnections(SocketConnection *Socket)
     new_Socket->server = Socket->server;
     new_Socket->socket_fd = accept(Socket->socket_fd, (sockaddr *)&Socket->addr, &len);
 
-    // fcnt÷l(new_Socket->socket_fd, F_SETFL, O_NONBLOCK);
+    fcntl(new_Socket->socket_fd, F_SETFL, O_NONBLOCK);
     EV_SET(&event[0], new_Socket->socket_fd, EVFILT_READ, EV_ADD, 0, 0, reinterpret_cast<void *>(new_Socket));
     EV_SET(&event[1], new_Socket->socket_fd, EVFILT_WRITE, EV_ADD | EV_DISABLE, 0, 0, reinterpret_cast<void *>(new_Socket));
     kevent(this->kq, event, 2, 0, 0, 0);
@@ -150,6 +151,7 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         buffer[ret] = '\0';
         fullsize += ret;
         // std::cout << "fullsize --> " << fullsize << " | ";
+        std::cout << "buffer --> " << buffer << std::endl;
         Connection->request.buffer_size = ret;
         if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
         {
@@ -178,18 +180,17 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
     }
     else if (filter == EVFILT_WRITE)
     {
-        char buffer[4001] = {0};
+        char buffer[1025] = {0};
         int _return;
 
         if (!Connection->response.response.empty())
         {
-            // Connection->response.response += "Content-Length: 11486837";
             write(Connection->socket_fd, Connection->response.response.c_str(), Connection->response.response.size());
             Connection->response.response.clear();
         }
         else if (Connection->response.fileFD != -2)
         {
-            _return = read(Connection->response.fileFD, buffer, 4000);
+            _return = read(Connection->response.fileFD, buffer, 1024);
             if (_return > 0)
             {
                 write(Connection->socket_fd, buffer, _return);
@@ -200,13 +201,13 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
                 std::cout << "Answer " << std::endl;
                 AddEvent(Connection->socket_fd, EVFILT_WRITE, EV_DELETE);
                 close(Connection->socket_fd);
+                Connection->response.fileFD = -2;
             }
         }
         else
         {
             write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size());
             Connection->drop_connection = 1;
-            std::cout << "Answer " << std::endl;
             AddEvent(Connection->socket_fd, EVFILT_WRITE, EV_DELETE);
             close(Connection->socket_fd);
         }

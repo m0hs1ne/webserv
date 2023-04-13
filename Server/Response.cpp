@@ -51,6 +51,7 @@ Response& Response::operator=(const Response& other)
     this->type = other.type;
     this->cgiheader = other.cgiheader;
     this->mNotAllow = other.mNotAllow;
+    this->fileFD = other.fileFD;
     return *this;
 }
 
@@ -99,12 +100,12 @@ void formGetResponse(Response &response, Server &server)
         type = "text/html";
     if (response.body.empty() &&
         response.redirect.empty() &&
-        (response.returnFile.empty() || response.mNotAllow || response.code == 404 || access(response.returnFile.c_str(), R_OK)))
+        (response.returnFile.empty() || response.mNotAllow || access(response.returnFile.c_str(), R_OK)))
     {
         response.body = code[response.code];
         fileSize = response.body.size();
     }
-    else if (response.body.empty() && !response.returnFile.empty() && isDir(response.returnFile.c_str()) != -1 && response.code == 200)
+    else if (response.body.empty() && !response.returnFile.empty() && isDir(response.returnFile.c_str()) != -1)
     {
         response.fileFD = open(response.returnFile.c_str(), O_RDWR);
         if(response.fileFD < 0)
