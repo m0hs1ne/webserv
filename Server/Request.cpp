@@ -196,7 +196,6 @@ void Request::checkPathFound(Response &response, Server &server)
         response.returnFile = response.fullPath;
     else
         response.code = 404;
-    
 }
 
 void Request::checkRedirection(Response &response, Server &server)
@@ -208,7 +207,7 @@ void Request::checkRedirection(Response &response, Server &server)
     }
     else if (!server.locations[response.location].index.empty() &&\
              response.returnFile.empty() &&\
-            response.fullPath[response.fullPath.size() - 1] == '/' && this->method == "GET")
+            response.fullPath[response.fullPath.size() - 1] == '/' && this->method == "GET" && !access(response.fullPath.c_str(), R_OK))
     {
         response.code = 200;
         response.returnFile = response.root + server.locations[response.location].index;

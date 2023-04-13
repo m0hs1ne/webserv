@@ -95,7 +95,7 @@ void WebServ::SetUpSockets()
             perror("bind failed");
             exit(EXIT_FAILURE);
         }
-        if (listen(Socket->socket_fd, 3) < 0)
+        if (listen(Socket->socket_fd, 128) < 0)
         {
             perror("listen");
             exit(EXIT_FAILURE);
@@ -151,7 +151,6 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         buffer[ret] = '\0';
         fullsize += ret;
         // std::cout << "fullsize --> " << fullsize << " | ";
-        std::cout << "buffer --> " << buffer << std::endl;
         Connection->request.buffer_size = ret;
         if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
         {
