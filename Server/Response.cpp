@@ -127,13 +127,15 @@ void formGetResponse(Response &response, Server &server)
     response.response += code[response.code] + "\r\n";
     response.response += "Content-Length: " + itos(fileSize) + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
-    if (response.redirect.empty())
+    if (response.redirect.empty() && response.cgiheader.empty())
         response.response += "Content-Type: " + type + "\r\n";
-    else
+    else if (!response.redirect.empty())
     {
         response.response += "Connection: close\r\n";
         response.response += "Location: " + response.redirect + "\r\n";
     }
+    if (!response.cgiheader.empty())
+        response.response += response.cgiheader;
     response.response += "\r\n";
 }
 

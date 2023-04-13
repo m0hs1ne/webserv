@@ -1,9 +1,11 @@
 #! /usr/bin/python3
 
 import os
+import sys
 from http import cookies
 # Import modules for CGI handling 
-import cgi, cgitb 
+import cgi, cgitb
+import base64
 
 # Create instance of FieldStorage 
 form = cgi.FieldStorage() 
@@ -13,6 +15,7 @@ key = form.getvalue('key')
 value  = form.getvalue('value')
 cookie = cookies.SimpleCookie()
 cookie[key] = value
-print("HTTP/1.1 204 OK")
-print(cookie.output())
-print("\r\n")
+print("Content-Type: text/plain\r")
+print(cookie.output() + "\r")
+print("\r")
+print("Cookie was set !")

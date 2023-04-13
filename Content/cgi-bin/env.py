@@ -3,9 +3,8 @@
 import os
 import cgi
 
-print("HTTP/1.1 200 OK")
-print("Content-type: text/html\r\n\r\n")
-
+print("Content-type: text/html\r")
+print("\r")
 print("<html>")
 print("<head>")
 print("<h2>Environment:</h2><br>")

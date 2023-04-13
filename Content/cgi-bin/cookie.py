@@ -3,15 +3,15 @@ import os, sys
 
 def show_cookie(c):
     for a, morsel in c.items():
-        print(a,':', morsel.value,'<br>')
+        line = a + ':'  + morsel.value + '<br>'
+        print("\r")
+        print(line + "\r")
 
 cookie = cookies.BaseCookie()
-print("Content-type: text/html\r\n")
-print("\r\n")
+print("Content-type: text/html\r")
 if 'HTTP_COOKIE' in os.environ: 
     cookie.load(os.environ["HTTP_COOKIE"])
-    # cookie.clear()
-    # print(cookie.output(), '<br>')
     show_cookie(cookie)
 else:
+    print("\r")
     print("No Cookies Set Yet!")

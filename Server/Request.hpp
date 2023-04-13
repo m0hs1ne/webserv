@@ -23,6 +23,7 @@ class Request
         size_t received;
         int b;
         size_t chunkSize;
+        std::string extension;
         std::string method;
         std::string body;
         size_t chunkSize_chunked;

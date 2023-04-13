@@ -5,14 +5,14 @@ Body {
   button { 
          background-color: #4CAF50; 
          width: 100%;
-          color: orange; 
+          color: red; 
           padding: 15px; 
           margin: 10px 0px; 
           border: none; 
           cursor: pointer; 
            } 
    form { 
-          border: 3px solid #f1f1f1; 
+          border: 3px solid red; 
       } 
    input[type=text], input[type=password] { 
           width: 100%; 
@@ -21,6 +21,9 @@ Body {
           display: inline-block; 
           border: 2px solid green; 
           box-sizing: border-box; 
+      }
+      label {
+        font-size: 5rem;
       }
    button:hover { 
           opacity: 0.7; 
@@ -34,5 +37,5 @@ Body {
      
    .container { 
           padding: 25px; 
-          background-color: lightblue;
+          background-color: green;
       } 

@@ -25,8 +25,10 @@ char **setEnv(Response response, Request &request, Server &server)
         if (request.attr.find("CONTENT_TYPE") != request.attr.end())
             stdEnv.push_back("CONTENT_TYPE=" + request.attr["CONTENT_TYPE"]);
     }
-    if (request.attr.find("HTTP_COOKIE") != request.attr.end())
-        stdEnv.push_back("HTTP_COOKIE=" + request.attr["HTTP_COOKIE"]);
+    if (request.attr.find("Cookie") != request.attr.end())
+    {
+        stdEnv.push_back("HTTP_COOKIE=" + request.attr["Cookie"].erase(0,1));
+    }
     stdEnv.push_back("SERVER_PROTOCOL=HTTP/1.1");
     stdEnv.push_back("GATEWAY_INTERFACE=CGI/1.1");
     stdEnv.push_back("REQUEST_METHOD=" + request.method);
@@ -38,12 +40,28 @@ char **setEnv(Response response, Request &request, Server &server)
     return convertToCharArray(stdEnv);
 }
 
+size_t find_cgi_path(std::vector<std::string>& cgiExtension, std::string cgiExts)
+{
+    size_t i = 0;
+    while (i < cgiExtension.size())
+    {
+        if (cgiExtension[i].find(cgiExts) != std::string::npos)
+            return i;
+        i++;
+    }
+    return i;
+}
+
 void checkCGI(Request &request, Response &response, Server &server)
 {
-    std::string cgiExts = server.locations[response.location].cgi_extension[0];
-    std::string cgiPaths = server.locations[response.location].cgi_path[0];
-    std::cout <<"CGII " << cgiPaths << std::endl;
-    //std::string cgiPaths = "/usr/bin/pyhton3";
+    std::string cgiExts = request.extension;
+    std::string cgiPaths;
+    size_t cgiPathIndex;
+
+    cgiPathIndex = find_cgi_path(server.locations[response.location].cgi_extension, cgiExts);
+    if (cgiPathIndex == server.locations[response.location].cgi_path.size())
+        cgiPathIndex = 0;
+    cgiPaths = server.locations[response.location].cgi_path[cgiPathIndex];
     int pipefd[2];
     int postBodyfd[2];
     pid_t pid;
@@ -91,7 +109,6 @@ void checkCGI(Request &request, Response &response, Server &server)
                 return;
             }
         }
-        std::cerr << "cgi done\n" << std::endl;
         if (dup2(pipefd[1], STDOUT_FILENO) == -1)
         {
             std::cerr << "Error redirecting standard output\n";
@@ -108,8 +125,8 @@ void checkCGI(Request &request, Response &response, Server &server)
         freeCharArray(envp);
         close(pipefd[1]);
     
-        std::string header;
-        std::string *line;
+        std::string header = "";
+        std::string *line = NULL;
         std::string buf;
         size_t n = 1;
         std::map<int, std::string> codeMsg = response.initHttpCode();
@@ -123,34 +140,29 @@ void checkCGI(Request &request, Response &response, Server &server)
         }
         if(response.bodySize == 0)
         {
-            buf.append("HTTP/1.1 " + codeMsg[500] + "\r\n");
             buf.append("Content-Type: text/html\r\n");
-            buf.append("Content-Length: 52\r\n");
             buf.append("\r\n");
             buf.append("<h1>500 Internal Error</h1>\r\n");
             buf.append("Error executing CGI\n");
             response.bodySize = buf.size();
         }
-        int i = 1;
-        size_t lineSize = 0;
         size_t headerSize = 0;
-    
+        size_t lineSize = 0;
         line = getLine(buf, 0, response.bodySize, &lineSize, "size");
-        while (!line->empty() && *line != "\r")
+        for (int i = 1; !line->empty() && *line != "\r"; i++)
         {
-            header.append(*line + "\n", lineSize);
+            header.append(*line + "\n");
+            delete line;
             headerSize += lineSize + 1;
             line = getLine(buf, i, response.bodySize, &lineSize, "size");
-            i++;
         }
-        std::cout << "buf: " << headerSize << " size : " << buf.size() <<std::endl;
-        headerSize += lineSize + 1;
-        buf.erase(0, headerSize);
-        response.bodySize -= headerSize;
+        buf.erase(0, header.size() + 2);
+        response.bodySize -= header.size() + 2;
         response.cgiheader = header;
-        response.body = "";
         if (!buf.empty())
             response.body.append(buf.c_str(), response.bodySize);
+        else
+            response.body.append(" ");
         dup2(saveStdin, STDIN_FILENO);
 	    dup2(saveStdout, STDOUT_FILENO);
         close(pipefd[0]);

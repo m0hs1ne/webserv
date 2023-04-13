@@ -150,8 +150,6 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         buffer[ret] = '\0';
         fullsize += ret;
         // std::cout << "fullsize --> " << fullsize << " | ";
-        std::cout << "========" << buffer << std::endl;
-        std::cout << "-----------" << std::endl;
         Connection->request.buffer_size = ret;
         if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
         {

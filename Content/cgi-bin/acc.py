@@ -29,10 +29,8 @@ class UserDataBase:
 
 
 def printAccPage(session):
-    print("HTTP/1.1 200 OK\r\n")
-    print("Content-length: 200\r\n")
-    print("Content-type: text/html\r\n")
-    print("\r\n")
+    print("Content-type: text/html\r")
+    print("\r")
     print("<html>")
     print("<head>")
     print("<title>Account Page</title>")
@@ -41,14 +39,13 @@ def printAccPage(session):
     print("<h1>Welcome Again", session.name, "!</h1>")
     print("<p>Your Session ID is: ", session.getSid(), "</p>")
     print("</body>")
-    print("<a href=\"/index.html\"> Click here to go back to homepage </a>")
+    print("<button id=\"logout\"> Click here to go back to login page </button>")
+    print("<script src=\"/assets/js/logout.js\"></script>")
     print("</html>")
 
 def printUserMsg(msg):
-    print("HTTP/1.1 200 OK\r\n")
-    print("Content-length: 50\r\n")
-    print("Content-type: text/html\r\n")
-    print("\r\n")
+    print("Content-type: text/html\r")
+    print("\r")
     print("<html>")
     print("<head>")
     print("<title>USER MSG</title>")
@@ -56,14 +53,12 @@ def printUserMsg(msg):
     print("<body>")
     print("<h1>", msg ,"</h1>")
     print("</body>")
-    print("<a href=\"/login.html\"> Click here to go back to login page </a>")
+    print("<a href=\"/cgi-bin/acc.py\"> Click here to go back to login page </a>")
     print("</html>")
 
 def printLogin():
-    print("HTTP/1.1 200 OK\r\n")
-    print("Content-length: 793\r\n")
-    print("Content-Type: text/html\r\n")
-    print("\r\n")
+    print("Content-Type: text/html\r")
+    print("\r")
     print("<html> ")
     print("<head>")
     print("<meta charset=\"UTF-8\" name=\"viewport\" content=\"width=device-width, initial-scale=1\">")
@@ -71,7 +66,7 @@ def printLogin():
     print("<title> Login Page </title>")
     print("</head>")
     print("<body>  ")
-    print("<center> <h1> Amanix Login Form </h1> </center> ")
+    print("<center> <h1> Webserv Login Form </h1> </center> ")
     print("<form action = \"/cgi-bin/acc.py\" method = \"get\">")
     print("<div class=\"container\"> ")
     print("<label>Username : </label> ")
@@ -107,19 +102,23 @@ def handleLogin(cookie):
     if username == None:
         printLogin()
     elif firstname == None:
+        print(username, file=sys.stderr)
         session = authUser(form.getvalue('username'), form.getvalue('password'))
         if(session == None):
             printUserMsg("Failed To Login, Username or Passowrd is wrong!")
         else:
-            print("Correct Crenditales :D",file=sys.stderr)
-            cookie.clear()
-            cookie["SID"] = session.getSid()
-            cookie["SID"]["expires"] = 120 # Session Expires after 2 mins
-            print("HTTP/1.1 301 OK\r\n")
-            print("Content-length: 0\r\n")
-            print(cookie.output() + "\r\n")
-            print("location: acc.py\r\n")
-            print("\r\n")
+            if os.path.exists('Content/cgi-bin/user_database'):
+                with open('Content/cgi-bin/user_database', 'rb') as f:
+                    database = pickle.load(f)
+                    if username in database.user_pass:
+                        print("Correct Crenditales :D",file=sys.stderr)
+                        cookie.clear()
+                        cookie["SID"] = session.getSid()
+                        cookie["SID"]["SameSite"] = "None"
+                        cookie["SID"]["expires"] = 120 # Session Expires after 2 mins
+                        print(cookie.output() + "\r")
+                        print("location: /cgi-bin/acc.py\r")
+                        printAccPage(session)
     else :
         if os.path.exists('Content/cgi-bin/user_database'):
             with open('Content/cgi-bin/user_database', 'rb') as f:
@@ -141,13 +140,12 @@ form = cgi.FieldStorage()
 cookie = cookies.SimpleCookie()
 if 'HTTP_COOKIE' in os.environ: 
     cookie.load(os.environ["HTTP_COOKIE"])
-
     if "SID" in cookie:
         print("Your Session ID is", cookie["SID"].value,file=sys.stderr)
         with open('Content/cgi-bin/sessions/session_'+ cookie["SID"].value, 'rb') as f:
             sess = pickle.load(f)
         printAccPage(sess)
     else:
-        handleLogin(cookie)    
+        handleLogin(cookie)
 else:
     handleLogin(cookie)

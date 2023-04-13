@@ -1,9 +1,11 @@
 #! /usr/bin/python3
 
 import os
+import sys
 from http import cookies
 # Import modules for CGI handling 
 import cgi, cgitb 
+import base64
 
 # Create instance of FieldStorage 
 form = cgi.FieldStorage() 
@@ -14,10 +16,12 @@ cookie = cookies.SimpleCookie()
 if 'HTTP_COOKIE' in os.environ:
     cookie.load(os.environ["HTTP_COOKIE"])
 if key in cookie:
-    print("HTTP/1.1 200 OK\r\n")
-    print("Content-Type: text/plain\r\n")
-    print("The Value of Cookie", key, "is", cookie[key].value)
+    line = "The Value of Cookie " + key + " is " + cookie[key].value + "\r"
+    length = len(line)
+    print("Content-Type: text/plain\r")
+    print("\r")
+    print(line)
 else:
-    print("HTTP/1.1 200 OK")
-    print("Content-Type: text/plain\r\n")
+    print("Content-Type: text/plain\r")
+    print("\r")
     print("Cookie was not found !")

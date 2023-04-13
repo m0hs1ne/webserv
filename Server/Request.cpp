@@ -62,17 +62,19 @@ void ParseFirstLine(std::string &buffer, Request &req)
 
     line = getLine(buffer, 0, req.buffer_size, &l_size, "size");
     req.headerSize += l_size + 1;
-    std::cout << "= " << l_size + 1 << "- " << *line << std::endl;
     splitArr = split(*line, ' ', 0);
     delete line;
     req.method = splitArr[0];
-    req.path = splitArr[1];
+    if (!splitArr[1].empty())
+        req.path = splitArr[1];
     splitArr = split(req.path, '?', 1);
     if (splitArr.size() > 1)
     {
         req.path = splitArr[0];
         req.query = splitArr[1];
     }
+    if (req.path.find_last_of('.') != std::string::npos)
+        req.extension = req.path.substr(req.path.find_last_of('.') + 1);
 }
 
 void ParseHeaderAttr(std::string &buffer, Request &req)
@@ -93,8 +95,6 @@ void ParseHeaderAttr(std::string &buffer, Request &req)
         line = getLine(buffer, i, req.buffer_size, &l_size, "size");
         req.headerSize += l_size + 1;
     }
-    
-    std::cout << "headerSize: " << req.headerSize << std::endl;
     delete line;
 }
 

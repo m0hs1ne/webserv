@@ -12,15 +12,15 @@ oper = form.getvalue('oper')
 arg3 = form.getvalue('s_num')
 
 if (not arg1 or not oper or not arg3):
-    print("HTTP/1.1 200 OK")
-    print("Content-type: text/html\r\n\r\n")
+    print("Content-type: text/html\r")
+    print("\r")
     print("<h1>Parameters are not correct\n</h1>")
     print("<p>f_num, oper, s_num are required</p>")
     exit(1)
 
 print(os.environ["QUERY_STRING"], file=sys.stderr)
-print("HTTP/1.1 200 OK")
-print("Content-type: text/html\r\n\r\n")
+print("Content-type: text/html\r")
+print("\r")
 
 if len(oper) != 1:
     print("Parameters are not correct")

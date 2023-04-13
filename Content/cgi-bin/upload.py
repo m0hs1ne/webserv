@@ -15,5 +15,6 @@ else:
    message = 'Uploading Failed'
 
 print("Content-Type: text/html;charset=utf-8")
-print ("Content-type:text/html\r\n")
+print ("Content-type:text/html\r")
+print("\r")
 print("<H1> " + message + " </H1>")
