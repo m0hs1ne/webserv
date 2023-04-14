@@ -19,7 +19,14 @@ void handleFile(Response &response,std::string path)
 
 void handleDir(Response &response)
 {
+    if (response.fullPath[response.fullPath.size() - 1] != '/')
+    {
+        response.code = 409;
+        return ;
+    }
+
     DIR *dir = opendir(response.fullPath.c_str());
+
 
     if(!dir)
     {
@@ -27,11 +34,6 @@ void handleDir(Response &response)
         return ;
     }
 
-    if (response.fullPath[response.fullPath.size() - 1] != '/')
-    {
-        response.code = 409;
-        return ;
-    }
     else
     {
         for(struct dirent *dirEntry = readdir(dir);dirEntry;dirEntry= readdir(dir))
