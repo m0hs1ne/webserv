@@ -5,7 +5,10 @@
 #include "ParsingConfig.hpp"
 #include "../includes/tools.hpp"
 #include <unistd.h>
+#include "Request.hpp"
 
+
+class Request;
 class Response
 {
     public:
@@ -16,6 +19,7 @@ class Response
         std::string codeMessage;
         std::string returnFile;
         std::string response;
+        std::string fileName;
         std::string root;
         std::string fullPath;
         std::string body;
@@ -28,7 +32,7 @@ class Response
         Response();
         Response(const Response& other);
         Response& operator=(const Response& other);
-        void formResponse(std::string method, Server &server);
+        void formResponse(Request &request, Server &server);
         std::map<int, std::string> initHttpCode();
         ~Response();
 };

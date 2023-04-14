@@ -61,14 +61,14 @@ void WebServ::RunServer()
                       << std::endl;
             continue;
         }
-        std::cout << " Kq-> " << kq_return << std::endl;
+        // std::cout << " Kq-> " << kq_return << std::endl;
         CheckEvents(revents, kq_return);
     }
 }
 
 void WebServ::SetUpSockets()
 {
-    int valread;
+    int valread = 1;
     for (size_t i = 0; i < servers.size(); i++)
     {
         SocketConnection *Socket = new SocketConnection;
@@ -179,7 +179,6 @@ void WebServ::Reciev(SocketConnection *Connection)
         close(Connection->socket_fd);
         delete Connection;
         std::cout << "here" << std::endl;
-        exit(1);
         // AddEvent(Connection->socket_fd, EVFILT_WRITE, Connection);
         return;
     }
@@ -190,7 +189,7 @@ void WebServ::Reciev(SocketConnection *Connection)
     if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
     {
         Connection->response.codeMsg = code;
-        Connection->response = Connection->request.handleRequest(ft_strdup(buffer, ret), this->servers[0]);
+        Connection->response = Connection->request.handleRequest(ft_strdup(buffer, ret), *(Connection->server));
     }
     if (Connection->request.ok)
     {
@@ -203,9 +202,10 @@ void WebServ::Reciev(SocketConnection *Connection)
     }
     else
         Connection->ended = true;
-    Connection->response.formResponse(Connection->request.method, *(Connection->server));
     if (Connection->ended)
     {
+        Connection->response.formResponse(Connection->request, *(Connection->server));
+        //std::cout << Connection->response.response + Connection->response.body << std::endl;
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
         AddEvent(Connection->socket_fd, EVFILT_WRITE, Connection);
     }
@@ -253,13 +253,12 @@ void WebServ::Send(SocketConnection *Connection)
     }
     else
     {
-        if (0 > write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size()))
-        {
-            DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
-            close(Connection->socket_fd);
-            delete Connection;
-            return ;
-        }
+        write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size());
+        Connection->response.body.clear();
+        DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
+        close(Connection->socket_fd);
+        delete Connection;
+        return ;
     }
 }
 

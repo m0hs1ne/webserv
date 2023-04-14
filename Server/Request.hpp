@@ -16,6 +16,7 @@ typedef struct Part
     std::string body;
 } Part;
 
+class Response;
 class Request
 {
     public:
@@ -50,7 +51,7 @@ class Request
 
         typedef struct parsingConfig::server Server;
         void fillRequest(const std::string &buffer);
-        bool isRequestWellFormed(Response &response, Server &server);
+        bool isRequestWellFormed(Response &response);
         bool matchLocation(Response &response, Server &server);
         bool methodAllowed(Response &response, Server &server);
         void checkRedirection(Response &response, Server &serve);

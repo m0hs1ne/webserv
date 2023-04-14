@@ -220,6 +220,13 @@ void handlingPost(SocketConnection &connection)
         return;
     }
 
+    if(connection.request.path != connection.server->locations[connection.response.location].name)
+    {
+        connection.response.code = 404;
+        connection.ended = true;
+        return;
+    }
+
     if (connection.request.ended)
     {
         close(connection.request.openedFd);
@@ -293,7 +300,9 @@ void handlingPost(SocketConnection &connection)
     else
     {
         std::string type = connection.server->typeToExt[connection.request.contentType.erase(0, 1).erase(connection.request.contentType.size() - 1, 1)];
-        connection.request.openedFd = open((uploadPath + "/" + connection.request.fileName + type).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
+        connection.request.fileName = uploadPath + "/" + connection.request.fileName + type;
+        connection.response.fileName = connection.request.fileName;
+        connection.request.openedFd = open((connection.request.fileName).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
         if (connection.request.openedFd == -1)
         {
             connection.response.code = 500;

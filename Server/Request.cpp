@@ -112,7 +112,7 @@ void Request::fillRequest(const std::string &buffer)
         fillPostBody(buf_tmp, *this);
 }
 
-bool Request::isRequestWellFormed(Response &response, Server &server)
+bool Request::isRequestWellFormed(Response &response)
 {
     if (this->attr.find("Transfer-Encoding") != this->attr.end() && this->attr["Transfer-Encoding"] != " chunked\r")
         response.code = 501;
@@ -130,9 +130,7 @@ bool Request::isRequestWellFormed(Response &response, Server &server)
                 response.code = 400;
         }
     }
-    else if (this->attr.find("Content-Length") != this->attr.end() &&
-             sToi(this->attr["Content-Length"]) > server.client_max_body_size)
-        response.code = 413;
+
     return (response.code == 200);
 }
 
@@ -240,11 +238,12 @@ Response Request::handleRequest(char *buffer, Server &server)
         buff->append(buffer, this->buffer_size);
         fillRequest(*buff);
         this->ok = false;
-        if (isRequestWellFormed(*response, server) &&
+        if (isRequestWellFormed(*response) &&
             urlDecode(*response) &&
             matchLocation(*response, server) &&
             methodAllowed(*response, server))
         {
+
             this->ok = true;
         }
         resp = *response;

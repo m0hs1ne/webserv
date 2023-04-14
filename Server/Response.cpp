@@ -52,13 +52,22 @@ Response& Response::operator=(const Response& other)
     this->cgiheader = other.cgiheader;
     this->mNotAllow = other.mNotAllow;
     this->fileFD = other.fileFD;
+    this->fileName = other.fileName;
     return *this;
 }
 
-void formPostResponse(Response &response, Server &server)
+void formPostResponse(Request &request, Response &response, Server &server)
 {
     std::map<int, std::string>code = response.initHttpCode();
-
+    std::ifstream oss(request.fileName, std::ios::binary | std::ios::ate);
+    size_t fileSize = oss.tellg();
+    oss.close();
+    if (fileSize > server.locations[response.location].client_max_body_size)
+    {
+        response.code = 413;
+        std::cout << "fileName: " << request.fileName << std::endl;
+        unlink(request.fileName.c_str());
+    }
     if (server.error_pages.find(response.code) != server.error_pages.end())
         response.returnFile = server.error_pages[response.code];
     if (response.body.empty() && response.returnFile.empty())
@@ -67,6 +76,7 @@ void formPostResponse(Response &response, Server &server)
         response.body = readFile(response.returnFile);
     response.response = "HTTP/1.1 ";
     response.response += code[response.code] + "\r\n";
+    response.response += "Content-Length: " + itos(response.body.size()) + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
     response.response += "Content-Type: text/html\r\n\r\n";
 }
@@ -140,13 +150,13 @@ void formGetResponse(Response &response, Server &server)
     response.response += "\r\n";
 }
 
-void Response::formResponse(std::string method, Server &server)
+void Response::formResponse(Request &request, Server &server)
 {
-    if (method == "GET")
+    if (request.method == "GET")
         formGetResponse(*this, server);
-    else if (method == "POST")
-        formPostResponse(*this, server);
-    else if (method == "DELETE")
+    else if (request.method == "POST")
+        formPostResponse(request,*this, server);
+    else if (request.method == "DELETE")
         formDeleteResponse(*this, server);
 }
 
