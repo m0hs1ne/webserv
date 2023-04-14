@@ -1,6 +1,9 @@
 # ifndef WEBSERV_HPP
 # define WEBSERV_HPP
 
+# define MAX_INT 10000
+# define RD_BUFFER 1025
+# define WR_BUFFER 1025
 # include <iostream>
 # include <string>
 
@@ -36,8 +39,13 @@ class WebServ
 		int is_readable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
 		int is_writable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
 		void drop_clients();
-		void DeleteEvent(int fd);
-		void AddEvent(int fd, int16_t filter, uint16_t flag);
+		// void DeleteEvent(int fd);
+
+		void AddEvent(int fd, int16_t filter, SocketConnection *udata);
+		void DeleteEvent(int fd, int16_t filter);
+		
+		void Reciev(SocketConnection *Connection);
+		void Send(SocketConnection *Connection);
 		WebServ(char *av);
 		// WebServ( WebServ const & src );
 		// ~WebServ();

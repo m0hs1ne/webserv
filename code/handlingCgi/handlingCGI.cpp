@@ -11,7 +11,7 @@ char** convertToCharArray(std::vector<std::string> strings) {
     return charArray;
 }
 
-char **setEnv(Response response, Request request, Server &server)
+char **setEnv(Response response, Request &request, Server &server)
 {
     std::vector<std::string> stdEnv;
 
@@ -19,28 +19,60 @@ char **setEnv(Response response, Request request, Server &server)
         stdEnv.push_back("QUERY_STRING=" + request.query);
     else if (request.method == "POST")
     {
-        stdEnv.push_back("CONTENT_LENGTH=" + request.attr["CONTENT_LENGTH"]);
-        stdEnv.push_back("CONTENT_TYPE=" + request.attr["CONTENT_TYPE"]);
+        std::stringstream out;
+		out << request.body.length();
+        stdEnv.push_back("CONTENT_LENGTH=" + out.str());
+        if (request.attr.find("CONTENT_TYPE") != request.attr.end())
+            stdEnv.push_back("CONTENT_TYPE=" + request.attr["CONTENT_TYPE"]);
     }
+    if (request.attr.find("Cookie") != request.attr.end())
+    {
+        stdEnv.push_back("HTTP_COOKIE=" + request.attr["Cookie"].erase(0,1));
+    }
+    stdEnv.push_back("SERVER_PROTOCOL=HTTP/1.1");
     stdEnv.push_back("GATEWAY_INTERFACE=CGI/1.1");
     stdEnv.push_back("REQUEST_METHOD=" + request.method);
     stdEnv.push_back("SERVER_PORT=" + itos(server.port));
-    stdEnv.push_back("REDIRECT_STATUS=" + itos(200));
+    stdEnv.push_back("REDIRECT_STATUS=200");
     stdEnv.push_back("PATH_INFO=" + request.path);
     stdEnv.push_back("PATH_TRANSLATED=" + response.fullPath);
+    stdEnv.push_back("SERVER_SOFTWARE=webserv/1.0");
     return convertToCharArray(stdEnv);
 }
 
-void checkCGI(Request request, Response &response, Server &server)
+size_t find_cgi_path(std::vector<std::string>& cgiExtension, std::string cgiExts)
 {
-    std::string cgiExts = server.locations[response.location].cgi_extension[0];
-    std::string cgiPaths = server.locations[response.location].cgi_path;
+    size_t i = 0;
+    while (i < cgiExtension.size())
+    {
+        if (cgiExtension[i].find(cgiExts) != std::string::npos)
+            return i;
+        i++;
+    }
+    return i;
+}
+
+void checkCGI(Request &request, Response &response, Server &server)
+{
+    std::string cgiExts = request.extension;
+    std::string cgiPaths;
+    size_t cgiPathIndex;
+
+    cgiPathIndex = find_cgi_path(server.locations[response.location].cgi_extension, cgiExts);
+    if (cgiPathIndex == server.locations[response.location].cgi_path.size())
+        cgiPathIndex = 0;
+    cgiPaths = server.locations[response.location].cgi_path[cgiPathIndex];
     int pipefd[2];
     int postBodyfd[2];
     pid_t pid;
     char buffer[2048];
     char *const args[] = {(char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL};
     char **envp;
+
+    int			saveStdin;
+	int			saveStdout;
+    saveStdin = dup(STDIN_FILENO);
+	saveStdout = dup(STDOUT_FILENO);
 
     if (pipe(pipefd) == -1)
     {
@@ -82,8 +114,6 @@ void checkCGI(Request request, Response &response, Server &server)
             std::cerr << "Error redirecting standard output\n";
             return;
         }
-        read(0, buffer, sizeof(buffer));
-        std::cerr << "+++++body: " << buffer << std::endl;
         if (execve(cgiPaths.c_str(), args, envp) == -1)
         {
             std::cerr << "Error executing command\n";
@@ -94,28 +124,118 @@ void checkCGI(Request request, Response &response, Server &server)
     {
         freeCharArray(envp);
         close(pipefd[1]);
-        std::string header;
-        std::string line;
+    
+        std::string header = "";
+        std::string *line = NULL;
         std::string buf;
         size_t n = 1;
+        std::map<int, std::string> codeMsg = response.initHttpCode();
+
         while (n != 0)
         {
             n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
+            response.bodySize += n;
             buffer[n] = '\0';
-            buf += buffer;
+            buf.append(buffer, n);
         }
-        line = getLine(buf, 0);
-        int i = 1;
-        while (!line.empty())
+        if(response.bodySize == 0)
         {
-            header += line + "\r\n";
-            line = getLine(buf, i);
-            i++;
+            buf.append("Content-Type: text/html\r\n");
+            buf.append("\r\n");
+            buf.append("<h1>500 Internal Error</h1>\r\n");
+            buf.append("Error executing CGI\n");
+            response.bodySize = buf.size();
         }
-        buf.erase(0, header.size());
+        size_t headerSize = 0;
+        size_t lineSize = 0;
+        line = getLine(buf, 0, response.bodySize, &lineSize, "size");
+        for (int i = 1; !line->empty() && *line != "\r"; i++)
+        {
+            header.append(*line + "\n");
+            delete line;
+            headerSize += lineSize + 1;
+            line = getLine(buf, i, response.bodySize, &lineSize, "size");
+        }
+        buf.erase(0, header.size() + 2);
+        response.bodySize -= header.size() + 2;
         response.cgiheader = header;
-        response.body = buf;
+        if (!buf.empty())
+            response.body.append(buf.c_str(), response.bodySize);
+        else
+            response.body.append(" ");
+        dup2(saveStdin, STDIN_FILENO);
+	    dup2(saveStdout, STDOUT_FILENO);
         close(pipefd[0]);
         wait(NULL);
-    }
+    } 
 }
+
+
+
+// void checkCGI(Request request, Response &response, Server &server)
+// {
+//     std::string cgiExts = server.locations[response.location].cgi_extension[0];
+//     std::string cgiPaths = server.locations[response.location].cgi_path;
+//     int pipefd[2];
+//     pid_t pid;
+//     char buffer[2048];
+//     char *const args[] = {(char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL};
+//     char **envp;
+
+//     if (pipe(pipefd) == -1)
+//     {
+//         std::cerr << "Error creating pipe\n";
+//         return;
+//     }
+//     envp = setEnv(response, request, server);
+//     pid = fork();
+
+//     if (pid == -1)
+//     {
+//         std::cerr << "Error forking process\n";
+//         return;
+//     }
+
+//     if (pid == 0)
+//     {
+//         close(pipefd[0]);
+//         if (dup2(pipefd[1], STDOUT_FILENO) == -1)
+//         {
+//             std::cerr << "Error redirecting standard output\n";
+//             return;
+//         }
+//         if (execve(cgiPaths.c_str(), args, envp) == -1)
+//         {
+//             std::cerr << "Error executing command\n";
+//             return;
+//         }
+//     }
+//     else
+//     {
+//         freeCharArray(envp);
+//         close(pipefd[1]);
+//         std::string header;
+//         std::string line;
+//         std::string buf;
+//         size_t n = 1;
+//         while (n != 0)
+//         {
+//             n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
+//             buffer[n] = '\0';
+//             buf += buffer;
+//         }
+//         line = getLine(buf, 0);
+//         int i = 1;
+//         while (!line.empty())
+//         {
+//             header += line + "\r\n";
+//             line = getLine(buf, i);
+//             i++;
+//         }
+//         buf.erase(0, header.size());
+//         response.cgiheader = header;
+//         response.body = buf;
+//         close(pipefd[0]);
+//         wait(NULL);
+//     }
+// }

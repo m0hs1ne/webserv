@@ -31,14 +31,13 @@ std::string generateRandomString()
     return random_string;
 }
 
-size_t countLines(std::string src)
+size_t countLines(std::string &src)
 {
-    size_t i = 0;
     size_t lines = 1;
 
-    while (src[i])
+    for (std::string::const_iterator it = src.begin(); it != src.end(); ++it)
     {
-        if (src[i++] == '\n')
+        if (*it == '\n')
             ++lines;
     }
     return lines;
@@ -62,56 +61,6 @@ void initHttpCode(std::map<int, std::string> &code)
         code[201] = "201 Created";
         code[200] = "200 OK";
     }
-}
-
-std::string setContentType(std::string path)
-{
-    std::string type;
-
-    if (path.empty())
-    {
-        type = "text/html";
-        return type;
-    }
-
-    std::string ext = path.substr(path.find_last_of(".") + 1);
-    if (ext == "html" || ext == "php")
-        type = "text/html";
-    else if (ext == "jpg" || ext == "jpeg")
-        type = "image/jpeg";
-    else if (ext == "png")
-        type = "image/png";
-    else if (ext == "gif")
-        type = "image/gif";
-    else if (ext == "css")
-        type = "text/css";
-    else if (ext == "js")
-        type = "application/javascript";
-    else if (ext == "json")
-        type = "application/json";
-    else if (ext == "txt")
-        type = "text/plain";
-    else if (ext == "xml")
-        type = "text/xml";
-    else if (ext == "pdf")
-        type = "application/pdf";
-    else if (ext == "zip")
-        type = "application/zip";
-    else if (ext == "gz")
-        type = "application/gzip";
-    else if (ext == "mp3")
-        type = "audio/mpeg";
-    else if (ext == "mp4")
-        type = "video/mp4";
-    else if (ext == "avi")
-        type = "video/x-msvideo";
-    else if (ext == "svg")
-        type = "image/svg+xml";
-    else if (ext == "ico")
-        type = "image/x-icon";
-    else
-        type = "text/plain";
-    return type;
 }
 
 void freeCharArray(char **charArray)
@@ -180,7 +129,7 @@ std::string readFile(const std::string &file)
 {
     std::ifstream ifs(file);
     if (!ifs)
-        throw parsingException("Error opening file");
+        std::cout << "Error: " << file <<" not found" << std::endl;
     std::stringstream buffer;
     buffer << ifs.rdbuf();
     return buffer.str();
@@ -195,33 +144,117 @@ std::string itos(size_t n)
     return res;
 }
 
-std::string getLine(std::string src, size_t n)
+void copyByteByByte(std::string &str1, std::string &str2)
 {
-    size_t i = 0;
-    size_t j = 0;
-    size_t lineCount = 0;
-
-    if (n >= countLines(src))
-        return std::string();
-    while (lineCount < n)
-    {
-        if (src[i++] == '\n')
-            ++lineCount;
-    }
-    while (std::isspace(src[i]) && src[i] != '\n')
-        i++;
-    while (src[i + j] && src[i + j] != '\n')
-        j++;
-    while (j > 0 && std::isspace(src[i + j - 1]))
-        --j;
-    return (std::string(src, i, j));
+    for (size_t i = 0; i < sizeof(str2.c_str()); i++)
+        str1[sizeof(str1.c_str()) + i] = str2[i];
 }
 
-std::vector<std::string> splitString(std::string str, std::string delimiter)
+std::string *getLine(std::string &src, size_t n, size_t size)
+{
+    size_t i = 0;
+    size_t j = 1;
+    size_t lineCount = 0;
+    std::string *ret = new std::string();
+
+    if (n >= countLines(src))
+        return ret;
+    while (lineCount < n)
+    {
+        if (i < size && src[i++] == '\n')
+            ++lineCount;
+    }
+    if (src[i] == '\n')
+        i++;
+    while (i + j < size && src[i + j] != '\n')
+        j++;
+    *ret = std::string(src, i, j);
+    return (ret);
+}
+
+std::string *getLine(std::string &src, size_t n, size_t size, size_t *len, std::string optional)
+{
+    size_t i = 0;
+    size_t j = 1;
+    size_t lineCount = 0;
+    std::string *ret = new std::string();
+
+    if (n >= countLines(src))
+    {
+        *len = 0;
+        return ret;
+    }
+    while (lineCount < n)
+    {
+        if (i < size && src[i++] == '\n')
+            ++lineCount;
+    }
+    if (src[i] == '\n')
+        i++;
+    // while (i < size && src[i] != '\n')
+    //     i++;
+    while (i + j < size && src[i + j] != '\n')
+        j++;
+    if (optional == "size")
+        *len = j;
+    else if (optional == "pos")
+        *len = i;
+    *ret = std::string(src, i, j);
+    return (ret);
+}
+
+std::string *getLine(std::string &src, size_t n, size_t size, size_t pos)
+{
+    size_t i = pos;
+    size_t j = 1;
+    std::string *ret = new std::string();
+    (void)n;
+    // while (i < size && src[i] != '\n')
+    //     i++;
+    while (i + j < size && src[i + j] != '\n')
+        j++;
+    *ret = std::string(src, i, j);
+    return (ret);
+}
+
+// std::string getLine(std::string src, size_t n)
+// {
+//     size_t i = 0;
+//     size_t j = 0;
+//     size_t lineCount = 0;
+
+//     if (n >= countLines(src))
+//         return std::string();
+//     while (lineCount < n)
+//     {
+//         if (src[i++] == '\n')
+//             ++lineCount;
+//     }
+//     while (src[i] != '\n')
+//         i++;
+//     while (src[i + j] && src[i + j] != '\n')
+//         j++;
+//     while (j > 0)
+//         --j;
+//     return (std::string(src, i, j));
+// }
+
+char *ft_strdup(const char *str, size_t size)
+{
+    char *dup = new char[size];
+
+    for (size_t i = 0; i < size; i++)
+        dup[i] = str[i];
+    return dup;
+}
+
+std::vector<std::string> splitString(std::string str, std::string delimiter, size_t size)
 {
     std::vector<std::string> tokens;
     size_t start = 0;
-    size_t end = str.find(delimiter);
+    size_t end = findByteByByte(str, delimiter, size, delimiter.size());
+    if (end == std::string::npos)
+        return tokens;
     while (end != std::string::npos)
     {
         tokens.push_back(str.substr(start, end - start));
@@ -230,6 +263,31 @@ std::vector<std::string> splitString(std::string str, std::string delimiter)
     }
     tokens.push_back(str.substr(start));
     return tokens;
+}
+
+std::string getLastLine(const std::string &str)
+{
+    std::string::size_type pos = str.find_last_of("\n\r");
+    if (pos == std::string::npos)
+    {
+        return str;
+    }
+    else if (pos == str.size() - 1)
+    {
+        std::string::size_type prevPos = str.find_last_of("\n\r", pos - 1);
+        if (prevPos == std::string::npos)
+        {
+            return str.substr(pos + 1);
+        }
+        else
+        {
+            return str.substr(prevPos + 1, pos - prevPos - 1);
+        }
+    }
+    else
+    {
+        return str.substr(pos + 1);
+    }
 }
 
 std::vector<std::string> split(std::string str, char c, int stop)
@@ -290,4 +348,26 @@ int isDir(const char *pathname)
         return -1;
     else
         return 0;
+}
+
+size_t findByteByByte(const std::string &str1, const std::string &str2, size_t str1Size, size_t str2Size)
+{
+    if (str2Size > str1Size)
+        return std::string::npos;
+
+    for (size_t i = 0; i < str1Size - str2Size + 1; i++)
+    {
+        bool match = true;
+        for (size_t j = 0; j < str2Size; j++)
+        {
+            if (str1[i + j] != str2[j])
+            {
+                match = false;
+                break;
+            }
+        }
+        if (match)
+            return i;
+    }
+    return std::string::npos;
 }

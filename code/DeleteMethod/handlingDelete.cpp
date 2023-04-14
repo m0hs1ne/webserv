@@ -4,7 +4,7 @@
 typedef struct parsingConfig::server Server;
 void handleFile(Response &response,std::string path)
 {
-    std::cout << "path: " << path << std::endl;
+    // std::cout << "path: " << path << std::endl;
     int result = unlink(path.c_str());
     if (result == 0)
         response.code = 204;
@@ -55,6 +55,8 @@ void handleDir(Response &response)
 
 void handlingDelete(SocketConnection &connection)
 {
+        connection.ended = true;
+
     if (isDir(connection.response.fullPath.c_str()) == -1)
         handleDir(connection.response);
     else if (!isDir(connection.response.fullPath.c_str()))

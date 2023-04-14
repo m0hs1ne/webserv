@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <cstdlib>
 
-static const char *serverProp[] = {"listen", "server_name", "error_page", "root", nullptr};
+static const char *serverProp[] = {"listen", "server_name", "error_page", "root","include", nullptr};
 static const char *locProp[] = {"method", "root", "autoindex", "index", "cgi_extension", "cgi_path", "upload_enable", "upload_path", "client_max_body_size","return", nullptr};
 static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
@@ -27,7 +27,7 @@ public:
         std::string index;
         std::vector<std::string> cgi_extension;
         std::string return_pages;
-        std::string cgi_path;
+        std::vector<std::string> cgi_path;
         bool upload_enable;
         std::string upload_path;
         size_t client_max_body_size;
@@ -42,6 +42,8 @@ public:
         std::vector<location> locations;
         size_t port;
         size_t client_max_body_size;
+        std::map<std::string, std::string> extToType;
+        std::map<std::string, std::string> typeToExt;
     };
 
     parsingConfig();
@@ -63,6 +65,7 @@ public:
     location parseLocation(const std::string &src, size_t lineS, size_t lineE);
     void parseServerProp(const std::string &src, size_t n, server &s);
     void parseServer(const std::string &src, size_t lineS, size_t lineE);
+    void parseMimeTypes(std::string filename,server &s);
     void validateConfig();
     std::vector<server> getServers();
     void print();

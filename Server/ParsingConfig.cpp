@@ -228,7 +228,13 @@ void parsingConfig::parseLocProp(const std::string &src, size_t n, location &l)
             l.cgi_extension.push_back(line[i]);
     }
     if (line[0] == locProp[5])
-        l.cgi_path = line[1];
+    {
+        for (size_t i = 1; i < line.size(); ++i)
+        {
+            std::cout << "LINEEEE : " << line[i] << std::endl;
+            l.cgi_path.push_back(line[i]);
+        }
+    }
     if (line[0] == locProp[6])
     {
         if (line[1] == "on")
@@ -285,6 +291,30 @@ parsingConfig::location parsingConfig::parseLocation(const std::string &src, siz
     return l;
 }
 
+void parsingConfig::parseMimeTypes(std::string filename,server &s)
+{
+    std::ifstream file(filename);
+
+    if (file.is_open())
+    {
+        std::string line;
+        while (std::getline(file, line))
+        {
+            size_t space_pos = line.find(' ');
+            if (space_pos != std::string::npos)
+            {
+                std::string mime_type = line.substr(0, space_pos);
+                std::string file_ext = line.substr(space_pos + 1);
+                    s.extToType[file_ext] = mime_type;
+                    s.typeToExt[mime_type] = file_ext;
+            }
+        }
+        file.close();
+    }
+    else
+        throw parsingException("Unable to open mime.types file");
+}
+
 void parsingConfig::parseServerProp(const std::string &src, size_t n, server &s)
 {
     std::vector<std::string> line;
@@ -310,6 +340,9 @@ void parsingConfig::parseServerProp(const std::string &src, size_t n, server &s)
     }
     if (line[0] == serverProp[3])
         s.root = line[1];
+    if (line[0] == serverProp[4])
+        parseMimeTypes(line[1], s);
+        
 }
 
 void parsingConfig::parseServer(const std::string &src, size_t lineS, size_t lineE)
@@ -419,7 +452,7 @@ void parsingConfig::print()
 			for (size_t j = 0; j < it2->cgi_extension.size(); ++j)
 				std::cout << it2->cgi_extension[j] << " ";
 			std::cout << std::endl;
-			std::cout << "     * cgi_path: " << it2->cgi_path << std::endl;
+			std::cout << "     * cgi_path: " << it2->cgi_path[0] << std::endl;
 			std::cout << "     * autoindex: " << it2->autoindex << std::endl;
 			std::cout << "     * upload_enable: " << it2->upload_enable << std::endl;
 			std::cout << "     * upload_path: " << it2->upload_path << std::endl;

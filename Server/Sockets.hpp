@@ -14,6 +14,7 @@
 class SocketConnection
 {
     public:
+        bool ended;
         Response response;
         Request request; 
         std::string client_request;
@@ -28,4 +29,3 @@ class SocketConnection
         //uint64_t Connec_fd; 
         int IsPortSocket;    
 };
-
