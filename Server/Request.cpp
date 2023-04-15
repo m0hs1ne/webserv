@@ -198,12 +198,7 @@ void Request::checkPathFound(Response &response, Server &server)
 
 void Request::checkRedirection(Response &response, Server &server)
 {
-    if (!server.locations[response.location].return_pages.empty())
-    {
-        response.code = 301;
-        response.returnFile = server.locations[response.location].return_pages;
-    }
-    else if (!server.locations[response.location].index.empty() &&\
+     if (!server.locations[response.location].index.empty() &&\
              response.returnFile.empty() &&\
             response.fullPath[response.fullPath.size() - 1] == '/' && this->method == "GET" && !access(response.fullPath.c_str(), R_OK))
     {

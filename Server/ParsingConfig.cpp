@@ -324,6 +324,8 @@ void parsingConfig::parseServerProp(const std::string &src, size_t n, server &s)
     {
         if (line.size() != 3)
             throw parsingException("<port> <host>");
+        if(s.port == sToI(line[1]))
+            throw parsingException("Duplicate port");
         s.port = sToI(line[1]);
         s.host = line[2];
     }

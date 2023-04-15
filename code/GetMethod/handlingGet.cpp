@@ -18,14 +18,48 @@ void handleDir(Request &request, Response &response, Server &server)
         response.code = 301;
         return;
     }
+    if(request.path == "/")
+    {
+        if(server.locations[response.location].index.empty() && !server.locations[response.location].autoindex && server.locations[response.location].return_pages.empty())
+        {
+            response.body = "Welcome to my server!";
+            response.code = 200;
+        }
+    }
+
+    if(!server.locations[response.location].return_pages.empty())
+    {
+        response.fullPath += server.locations[response.location].return_pages;
+        response.returnFile = response.fullPath;
+        response.code = 301;
+        if (access(response.fullPath.c_str(), R_OK))
+        {
+            response.code = 403;
+        }
+    }
+        
+    else if(server.locations[response.location].index.empty())
+    {
+        response.code = 403;
+    }
+    else
+    {
+        response.fullPath += server.locations[response.location].index;
+        if (access(response.fullPath.c_str(), R_OK))
+        {
+            response.code = 403;
+        }
+    }
+
+    if (response.fullPath.find_last_of('.') != std::string::npos)
+        request.extension = response.fullPath.substr(response.fullPath.find_last_of('.') + 1);
+
     if (!server.locations[response.location].cgi_extension.empty() &&
         find(server.locations[response.location].cgi_extension.begin(),\
              server.locations[response.location].cgi_extension.end(),\
              request.extension) !=  \
-             server.locations[response.location].cgi_extension.end() &&\
-        !access((response.fullPath + server.locations[response.location].index).c_str(), R_OK))
+             server.locations[response.location].cgi_extension.end())
     {
-        response.fullPath += server.locations[response.location].index;
         checkCGI(request, response, server);
         return;
     }
