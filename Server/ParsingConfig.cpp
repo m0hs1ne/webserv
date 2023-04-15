@@ -379,7 +379,7 @@ void parsingConfig::validateConfig()
         for (size_t j = 0; j < servers.size(); ++j)
         {
             if (i != j)
-                if (servers[i].host == servers[j].host && servers[i].port == servers[j].port)
+                if (servers[i].host == servers[j].host && servers[i].port == servers[j].port && servers[i].names == servers[j].names)
                     throw parsingException("Duplicate server");
         }
     }
