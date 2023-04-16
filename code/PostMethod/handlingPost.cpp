@@ -100,9 +100,37 @@ void fillFile(SocketConnection &connection)
     }
     if (connection.ended)
         close(connection.request.openedFd);
+    connection.request.openedFd = -2;
     connection.request.bodySize = 0;
    
     connection.request.body.clear();
+}
+
+void process_for_cgi(SocketConnection &connection, std::string uploadPath)
+{
+    if (connection.request.openedFd == -2)
+    {
+        std::string type = "";
+        if (!connection.request.contentType.empty())
+            type = connection.server->typeToExt[connection.request.contentType.erase(0, 1).erase(connection.request.contentType.size() - 1, 1)];
+        connection.request.fileName = uploadPath + "/" + connection.request.fileName + type;
+        connection.response.fileName = connection.request.fileName;
+        connection.request.openedFd = open((connection.request.fileName).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
+        if (connection.request.openedFd == -1)
+        {
+            connection.response.code = 500;
+            connection.request.ended = true;
+            return;
+        }
+    }
+    std::cout << "openedFd: " << connection.request.openedFd << std::endl;
+    fillFile(connection);
+    if (connection.ended)
+    {
+        std::cout << "openFd2: " << connection.request.openedFd << std::endl;
+        checkCGI(connection.request, connection.response, *(connection.server));
+    }
+    connection.response.code = 200;
 }
 
 void handlingPost(SocketConnection &connection)
@@ -110,23 +138,15 @@ void handlingPost(SocketConnection &connection)
     std::string contentLength;
     std::string body;
     std::string uploadPath;
-
-    if (connection.server->locations[connection.response.location].upload_enable && !connection.server->locations[connection.response.location].cgi_path.empty())
-    {
-        connection.response.code = 500;
-        std::cerr << "Error: CGI and Upload conflict." << std::endl;
-        return;
-    }
-
-
-    if (connection.request.ended)
-    {
-        close(connection.request.openedFd);
-        return;
-    }
-    else if (connection.request.openedFd != -2)
+    std::cout << "response.location: " << connection.response.location << std::endl;
+    if (connection.request.openedFd != -2 && connection.server->locations[connection.response.location].cgi_path.empty())
     {
         fillFile(connection);
+        return;
+    }
+    else if (connection.request.openedFd != -2 && !connection.server->locations[connection.response.location].cgi_path.empty())
+    {
+        process_for_cgi(connection, uploadPath);
         return;
     }
 
@@ -155,11 +175,9 @@ void handlingPost(SocketConnection &connection)
             }
         }
     }
-    else if (!connection.server->locations[connection.response.location].cgi_path.empty())
+    if (!connection.server->locations[connection.response.location].cgi_path.empty())
     {
-        checkCGI(connection.request, connection.response, *(connection.server));
-        connection.response.code = 200;
-        connection.ended = 1;
+        process_for_cgi(connection, uploadPath);
         return;
     }
     else
@@ -168,6 +186,7 @@ void handlingPost(SocketConnection &connection)
             connection.response.code = 405;
         else
             connection.response.code = 403;
+        connection.ended = true;
         return;
     }
 

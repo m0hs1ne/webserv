@@ -201,7 +201,6 @@ void WebServ::Reciev(SocketConnection *Connection)
     }
     else
         Connection->ended = true;
-    std::cout << "buffer-> " << Connection->ended << std::endl;
     if (Connection->ended)
     {
         Connection->response.formResponse(Connection->request, *(Connection->server));
