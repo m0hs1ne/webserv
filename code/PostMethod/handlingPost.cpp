@@ -105,12 +105,12 @@ void handlingPost(SocketConnection &connection)
         return;
     }
 
-    if(connection.request.path != connection.server->locations[connection.response.location].name)
-    {
-        connection.response.code = 404;
-        connection.ended = true;
-        return;
-    }
+    // if(connection.request.path != connection.server->locations[connection.response.location].name)
+    // {
+    //     connection.response.code = 404;
+    //     connection.ended = true;
+    //     return;
+    // }
 
     if (connection.request.ended)
     {

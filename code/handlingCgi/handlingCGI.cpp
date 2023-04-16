@@ -15,6 +15,7 @@ char **setEnv(Response response, Request &request, Server &server)
 {
     std::vector<std::string> stdEnv;
 
+    (void)server;
     if (!request.query.empty() && request.method == "GET")
         stdEnv.push_back("QUERY_STRING=" + request.query);
     else if (request.method == "POST")
@@ -29,14 +30,10 @@ char **setEnv(Response response, Request &request, Server &server)
     {
         stdEnv.push_back("HTTP_COOKIE=" + request.attr["Cookie"].erase(0,1));
     }
-    stdEnv.push_back("SERVER_PROTOCOL=HTTP/1.1");
-    stdEnv.push_back("GATEWAY_INTERFACE=CGI/1.1");
     stdEnv.push_back("REQUEST_METHOD=" + request.method);
-    stdEnv.push_back("SERVER_PORT=" + itos(server.port));
+    stdEnv.push_back("SCRIPT_FILENAME=" + response.fullPath);
     stdEnv.push_back("REDIRECT_STATUS=200");
     stdEnv.push_back("PATH_INFO=" + request.path);
-    stdEnv.push_back("PATH_TRANSLATED=" + response.fullPath);
-    stdEnv.push_back("SERVER_SOFTWARE=webserv/1.0");
     return convertToCharArray(stdEnv);
 }
 
@@ -90,6 +87,10 @@ void checkCGI(Request &request, Response &response, Server &server)
         close(postBodyfd[1]);
     }
     envp = setEnv(response, request, server);
+    for (size_t i = 0; envp[i] != NULL; i++)
+    {
+        std::cout << envp[i] << std::endl;
+    }
     pid = fork();
 
     if (pid == -1)
@@ -114,6 +115,9 @@ void checkCGI(Request &request, Response &response, Server &server)
             std::cerr << "Error redirecting standard output\n";
             return;
         }
+        // char buffer[1000];
+        // read(STDIN_FILENO, buffer, 1000);
+        // std::cerr << buffer << std::endl;
         if (execve(cgiPaths.c_str(), args, envp) == -1)
         {
             std::cerr << "Error executing command\n";
@@ -167,7 +171,7 @@ void checkCGI(Request &request, Response &response, Server &server)
 	    dup2(saveStdout, STDOUT_FILENO);
         close(pipefd[0]);
         wait(NULL);
-    } 
+        }
 }
 
 

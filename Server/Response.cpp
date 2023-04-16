@@ -59,9 +59,13 @@ Response& Response::operator=(const Response& other)
 void formPostResponse(Request &request, Response &response, Server &server)
 {
     std::map<int, std::string>code = response.initHttpCode();
+    size_t fileSize = 0;
     std::ifstream oss(request.fileName, std::ios::binary | std::ios::ate);
-    size_t fileSize = oss.tellg();
-    oss.close();
+    if (oss.is_open())
+    {
+        fileSize = oss.tellg();
+        oss.close();
+    }
     if (fileSize > server.locations[response.location].client_max_body_size)
     {
         response.code = 413;
