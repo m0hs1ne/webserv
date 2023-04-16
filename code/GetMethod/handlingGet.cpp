@@ -31,6 +31,7 @@ void handleDir(Request &request, Response &response, Server &server)
     {
         response.fullPath += server.locations[response.location].return_pages;
         response.returnFile = response.fullPath;
+        response.redirect = request.path + server.locations[response.location].return_pages;
         response.code = 301;
         if (access(response.fullPath.c_str(), R_OK))
         {
