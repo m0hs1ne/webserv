@@ -55,7 +55,7 @@ class Request
         bool matchLocation(Response &response, Server &server);
         bool methodAllowed(Response &response, Server &server);
         void checkRedirection(Response &response, Server &serve);
-        bool checkPathFound(Response &response, Server &server);
+        void checkPathFound(Response &response, Server &server);
         bool urlDecode(Response &response);
 
         Response handleRequest(char *buffer, Server &server);
