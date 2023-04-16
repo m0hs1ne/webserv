@@ -9,111 +9,6 @@ int skipUntilBody(std::string &str)
     return i--;
 }
 
-void parseMultiPart(std::string part, Request &request)
-{
-    Part Part;
-    if (part.find("Content-Disposition: form-data; name=\"") != std::string::npos)
-    {
-        Part.name = part.substr(part.find("Content-Disposition: form-data; name=\"") + 38);
-        Part.name = Part.name.substr(0, Part.name.find("\""));
-        part.erase(0, part.find("Content-Disposition: form-data; name=\"") + 38);
-    }
-    if (part.find("filename=\"") != std::string::npos)
-    {
-        Part.filename = part.substr(part.find("filename=\"") + 10);
-        Part.filename = Part.filename.substr(0, Part.filename.find("\""));
-        part.erase(0, part.find("filename=\"") + 10);
-    }
-
-    if (part.find("Content-Type: ") != std::string::npos)
-    {
-        Part.contentType = part.substr(part.find("Content-Type: ") + 14);
-        Part.contentType = Part.contentType.substr(0, Part.contentType.find("\n"));
-        part.erase(0, part.find("Content-Type: ") + 14);
-        part.erase(0, part.find(Part.contentType) + Part.contentType.size());
-        part.erase(0, skipUntilBody(part));
-    }
-    Part.body = part;
-    request.parts.push_back(Part);
-}
-
-void boundary(SocketConnection &connection)
-{
-    std::string boundary = "--" + connection.request.contentType.substr(connection.request.contentType.find("boundary=") + 9);
-    std::vector<std::string> files;
-
-    // if last line can be a part of boundary concatinate it with the first line of the next body and if it is a boundary parse it
-    std::string lastLine = getLastLine(connection.request.body);
-    if (!connection.request.lastLine.empty())
-    {
-        connection.request.body = connection.request.lastLine + connection.request.body;
-        connection.request.lastLine.clear();
-    }
-    if (boundary.find(lastLine) == 0)
-    {
-        connection.request.lastLine = lastLine;
-        connection.request.body.erase(connection.request.body.find(lastLine), lastLine.size());
-    }
-
-    // Split the body to diffrent parts with the boundary
-    files = splitString(connection.request.body, boundary, connection.request.buffer_size);
-
-    // Body with no boundaries push it directly to the opened file
-    if (files.size() == 0)
-    {
-        write(connection.request.bFd, connection.request.body.c_str(), connection.request.body.size());
-        return;
-    }
-
-    // Body with boundaries in middle push the part before the boundary to the opened file
-    // close the file and remove it from the vector
-    if (findByteByByte(connection.request.body, boundary, connection.request.buffer_size, boundary.size()) != 0 &&
-        findByteByByte(connection.request.body, boundary, connection.request.buffer_size, boundary.size()) != std::string::npos)
-    {
-        write(connection.request.bFd, files[0].c_str(), files[0].size());
-        close(connection.request.bFd);
-        connection.request.bFd = -2;
-        files.erase(files.begin());
-    }
-
-    // if there is more files parse them
-    for (size_t i = 0; i < files.size(); i++)
-    {
-        if (!files[i].empty())
-            parseMultiPart(files[i], connection.request);
-    }
-
-    // Open the file and write the body to it
-    for (size_t i = 0; i < connection.request.parts.size(); i++)
-    {
-        if (!connection.request.parts[i].filename.empty())
-        {
-            if (connection.request.bFd == -2)
-            {
-                std::string file = connection.request.uploadPath + "/" + connection.request.parts[i].filename;
-                connection.request.bFd = open(file.c_str(), O_RDWR | O_CREAT, 0777);
-            }
-            write(connection.request.bFd, connection.request.parts[i].body.c_str(), connection.request.parts[i].body.size());
-        }
-        else
-            connection.request.data[connection.request.parts[i].name] = connection.request.parts[i].body;
-        if ((i + 1) != connection.request.parts.size())
-        {
-            close(connection.request.bFd);
-            connection.request.bFd = -2;
-        }
-    }
-
-    // if the body ends with the boundary close the opened file
-    if (findByteByByte(connection.request.body, boundary + "--", connection.request.buffer_size, (boundary + "--").size()) != std::string::npos)
-    {
-        close(connection.request.bFd);
-        connection.request.bFd = -2;
-        connection.ended = true;
-    }
-    connection.request.parts.clear();
-}
-
 int hexToDec(const std::string &hex)
 {
     int dec;
@@ -122,15 +17,6 @@ int hexToDec(const std::string &hex)
     return dec;
 }
 
-int hexToDec(char hex)
-{
-    int dec;
-    std::stringstream ss(hex);
-    ss >> std::hex >> dec;
-    if (dec == 0 && hex != '0')
-        return -1;
-    return dec;
-}
 
 void fillFile(SocketConnection &connection)
 {
@@ -139,7 +25,6 @@ void fillFile(SocketConnection &connection)
     std::vector<std::string> splitArr;
     std::string body = "";
     size_t size = 0;
-    //std::string &chunkSize_chunked = connection.request.chunkSize_chunked;
 
     if (connection.request.attr.find("Transfer-Encoding") != connection.request.attr.end() &&
         connection.request.attr["Transfer-Encoding"] == " chunked\r")
@@ -266,6 +151,8 @@ void handlingPost(SocketConnection &connection)
     else if (!connection.server->locations[connection.response.location].cgi_path.empty())
     {
         checkCGI(connection.request, connection.response, *(connection.server));
+        connection.response.code = 200;
+        connection.ended = 1;
         return;
     }
     else

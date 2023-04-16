@@ -178,8 +178,6 @@ void WebServ::Reciev(SocketConnection *Connection)
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
         close(Connection->socket_fd);
         delete Connection;
-        std::cout << "here" << std::endl;
-        // AddEvent(Connection->socket_fd, EVFILT_WRITE, Connection);
         return;
     }
     else if(ret < 0)
@@ -205,7 +203,6 @@ void WebServ::Reciev(SocketConnection *Connection)
     if (Connection->ended)
     {
         Connection->response.formResponse(Connection->request, *(Connection->server));
-        //std::cout << Connection->response.response + Connection->response.body << std::endl;
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
         AddEvent(Connection->socket_fd, EVFILT_WRITE, Connection);
     }
@@ -253,12 +250,14 @@ void WebServ::Send(SocketConnection *Connection)
     }
     else
     {
-        write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size());
-        Connection->response.body.clear();
-        DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
-        close(Connection->socket_fd);
-        delete Connection;
-        return ;
+        if(0 >  write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size()))
+        {
+            Connection->response.body.clear();
+            DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
+            close(Connection->socket_fd);
+            delete Connection;
+            return ;
+        }
     }
 }
 
