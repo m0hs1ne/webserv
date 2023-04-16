@@ -88,15 +88,57 @@ void formPostResponse(Request &request, Response &response, Server &server)
 void formDeleteResponse(Response &response, Server &server)
 {
     std::map<int, std::string>code = response.initHttpCode();
+    size_t fileSize = 0;
 
     if (server.error_pages.find(response.code) != server.error_pages.end())
+    {
         response.returnFile = server.error_pages[response.code];
+        std::ifstream oss(response.returnFile, std::ios::binary | std::ios::ate);
+        if (oss.is_open())
+        {
+            fileSize = oss.tellg();
+            oss.close();
+        }
+    }
     else
+    {
         response.body = code[response.code];
+        fileSize = response.body.size();
+    }
     response.response = "HTTP/1.1 ";
     response.response += code[response.code] + "\r\n";
     response.response += "Server: " + server.names[0] + "\r\n";
-    response.response += "Content-Length: 0\r\n";
+    response.response += "Content-Type: text/html\r\n";
+    response.response += "Content-Length: " + itos(fileSize) +"\r\n";
+    response.response += "\r\n";
+}
+
+void formNotAllowedResponse(Response &response, Server &server)
+{
+    std::map<int, std::string>code = response.initHttpCode();
+    size_t fileSize = 0;
+    response.code = 501;
+
+    if (server.error_pages.find(response.code) != server.error_pages.end())
+    {
+        response.returnFile = server.error_pages[response.code];
+        std::ifstream oss(response.returnFile, std::ios::binary | std::ios::ate);
+        if (oss.is_open())
+        {
+            fileSize = oss.tellg();
+            oss.close();
+        }
+    }
+    else
+    {
+        response.body = code[response.code];
+        fileSize = response.body.size();
+    }
+    response.response = "HTTP/1.1 ";
+    response.response += code[response.code] + "\r\n";
+    response.response += "Server: " + server.names[0] + "\r\n";
+    response.response += "Content-Type: text/html\r\n";
+    response.response += "Content-Length: " + itos(fileSize) +"\r\n";
     response.response += "\r\n";
 }
 
@@ -162,6 +204,8 @@ void Response::formResponse(Request &request, Server &server)
         formPostResponse(request,*this, server);
     else if (request.method == "DELETE")
         formDeleteResponse(*this, server);
+    else if (this->mNotAllow)
+        formNotAllowedResponse(*this, server);
 }
 
 Response::~Response(){}

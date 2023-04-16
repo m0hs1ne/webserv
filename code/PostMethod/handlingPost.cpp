@@ -34,8 +34,12 @@ void fillFile(SocketConnection &connection)
             size = connection.request.bodySize;
             line = getLine(connection.request.body, 0, size);
             connection.request.chunkSize = hexToDec(*line);
-            connection.request.body.erase(0, line->size() + 1);
-            size -= line->size() + 1;
+            if (connection.request.chunkSize != 0)
+            {
+                connection.request.body.erase(0, line->size() + 1);
+                size -= line->size() + 1;
+            }
+            std::cout << "size: " << size << std::endl;
             delete line;
         }
         else
@@ -46,11 +50,20 @@ void fillFile(SocketConnection &connection)
             std::string tmp = connection.request.body.substr(size - 5, 5);
             if (tmp == "0\r\n\r\n")
             {
-                connection.request.body.erase(size - 5, 5);
-                connection.ended = true;
+                if (connection.request.chunkSize == 0)
+                {
+                    connection.request.body.erase(size - 5, 5);
+                    size -= 5;
+                }
+                else
+                {
+                    connection.request.body.erase(size - 7, 7);
+                    size -= 7;
+                }
                 write(connection.request.openedFd, connection.request.body.c_str(), size);
+                connection.response.code = 201;
+                connection.ended = true;
                 return ;
-                size -= 5;
             }
         }
         if (connection.request.chunkSize >= size - 50 && connection.request.chunkSize < size && connection.ended != true)
@@ -105,12 +118,6 @@ void handlingPost(SocketConnection &connection)
         return;
     }
 
-    // if(connection.request.path != connection.server->locations[connection.response.location].name)
-    // {
-    //     connection.response.code = 404;
-    //     connection.ended = true;
-    //     return;
-    // }
 
     if (connection.request.ended)
     {
@@ -186,7 +193,9 @@ void handlingPost(SocketConnection &connection)
     }
     else
     {
-        std::string type = connection.server->typeToExt[connection.request.contentType.erase(0, 1).erase(connection.request.contentType.size() - 1, 1)];
+        std::string type = "";
+        if (!connection.request.contentType.empty())
+            type = connection.server->typeToExt[connection.request.contentType.erase(0, 1).erase(connection.request.contentType.size() - 1, 1)];
         connection.request.fileName = uploadPath + "/" + connection.request.fileName + type;
         connection.response.fileName = connection.request.fileName;
         connection.request.openedFd = open((connection.request.fileName).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);

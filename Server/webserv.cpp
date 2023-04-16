@@ -183,6 +183,7 @@ void WebServ::Reciev(SocketConnection *Connection)
     else if(ret < 0)
         exit(0);
     buffer[ret] = '\0';
+    std::cout << "buffer-> " << buffer << std::endl;
     Connection->request.buffer_size = ret;
     if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
     {
@@ -200,6 +201,7 @@ void WebServ::Reciev(SocketConnection *Connection)
     }
     else
         Connection->ended = true;
+    std::cout << "buffer-> " << Connection->ended << std::endl;
     if (Connection->ended)
     {
         Connection->response.formResponse(Connection->request, *(Connection->server));
@@ -213,7 +215,6 @@ void WebServ::Send(SocketConnection *Connection)
 {
     char buffer[1025] = {0};
     int _return;
-
     if (!Connection->response.response.empty())
     {
         if (0 > write(Connection->socket_fd, Connection->response.response.c_str(), Connection->response.response.size()))
@@ -250,18 +251,15 @@ void WebServ::Send(SocketConnection *Connection)
     }
     else
     {
-        if(0 >  write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size()))
-        {
-            Connection->response.body.clear();
-            DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
-            close(Connection->socket_fd);
-            delete Connection;
-            return ;
-        }
+        std::cout << "ENTER SEND" << std::endl;
+        write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size());
+        Connection->response.body.clear();
+        DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
+        close(Connection->socket_fd);
+        delete Connection;
+        return ;
     }
 }
-
-
 
 void WebServ::AddEvent(int fd, int16_t filter, SocketConnection *udata)
 {

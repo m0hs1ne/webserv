@@ -178,12 +178,13 @@ bool Request::matchLocation(Response &response, Server &server)
     else if(this->path != server.locations[location].name)
         this->path = this->path.substr(server.locations[location].name.size());
     response.location = location;
-    checkPathFound(response, server);
+    if(!checkPathFound(response, server))
+        return false;
     checkRedirection(response, server);
     return true;
 }
 
-void Request::checkPathFound(Response &response, Server &server)
+bool Request::checkPathFound(Response &response, Server &server)
 {
     if (!server.locations[response.location].root.empty())
         response.root = server.locations[response.location].root;
@@ -193,7 +194,11 @@ void Request::checkPathFound(Response &response, Server &server)
     if (response.fullPath[response.fullPath.size() - 1] != '/' && !access(response.fullPath.c_str(), R_OK))
         response.returnFile = response.fullPath;
     else
+    {
         response.code = 404;
+        return false;
+    }
+    return true;
 }
 
 void Request::checkRedirection(Response &response, Server &server)
@@ -204,7 +209,6 @@ void Request::checkRedirection(Response &response, Server &server)
     {
         response.code = 200;
         response.returnFile = response.root + server.locations[response.location].index;
-
     }
 }
 
@@ -249,19 +253,7 @@ Response Request::handleRequest(char *buffer, Server &server)
     else
     {
         this->method = "POST";
-        if(!this->body.empty())
-        {
-            write(1, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n1------------------------------------------------------------------------------------------\n", 113);
-            write(1, this->body.c_str(), this->chunkSize_chunked);
-            write(1, "\n2------------------------------------------------------------------------------------------\n\n\n", 96);
-            this->body.append(buffer, this->buffer_size);
-            write(1, "\n\n\n1------------------------------------------------------------------------------------------\n", 96);
-            write(1, this->body.c_str(), this->chunkSize_chunked + this->buffer_size);
-            write(1, "\n2------------------------------------------------------------------------------------------\n\n\n", 96);
-            // exit(0);
-        }
-        else
-            this->body.append(buffer, this->buffer_size);
+        this->body.append(buffer, this->buffer_size);
         Response response;
         response.code = 200;
         return response;
