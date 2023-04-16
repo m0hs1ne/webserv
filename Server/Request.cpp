@@ -178,31 +178,34 @@ bool Request::matchLocation(Response &response, Server &server)
     else if(this->path != server.locations[location].name)
         this->path = this->path.substr(server.locations[location].name.size());
     response.location = location;
-    if(!checkPathFound(response, server))
-        return false;
+    // if(!checkPathFound(response, server))
+    //     return false;
+    checkPathFound(response, server);
     checkRedirection(response, server);
     return true;
 }
 
-bool Request::checkPathFound(Response &response, Server &server)
+void Request::checkPathFound(Response &response, Server &server)
 {
     if (!server.locations[response.location].root.empty())
         response.root = server.locations[response.location].root;
     else
         response.root = server.root;
     response.fullPath = response.root + this->path;
-    if (response.fullPath[response.fullPath.size() - 1] != '/' && !access(response.fullPath.c_str(), R_OK))
+    if ((response.fullPath[response.fullPath.size() - 1] != '/' && !access(response.fullPath.c_str(), R_OK)))
         response.returnFile = response.fullPath;
     else
-    {
         response.code = 404;
-        return false;
-    }
-    return true;
 }
 
 void Request::checkRedirection(Response &response, Server &server)
 {
+    if(this->path == "/" && !server.locations[response.location].index.empty() && response.code == 404)
+    {
+        response.code = 200;
+        response.returnFile = response.root + server.locations[response.location].index;
+    }
+
      if (!server.locations[response.location].index.empty() &&\
              response.returnFile.empty() &&\
             response.fullPath[response.fullPath.size() - 1] == '/' && this->method == "GET" && !access(response.fullPath.c_str(), R_OK))
