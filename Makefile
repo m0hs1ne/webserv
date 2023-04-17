@@ -34,7 +34,7 @@ clean:
 fclean:		clean
 			@$(RM) $(NAME)
 			@find . -name ".DS_Store" -delete
-			@rm -rf webServer.dSYM
+			@rm -rf webserv.dSYM
 			@$(ECHO) -n "$(CYAN)[webServ]:\texec. files$(DEF_COLOR)$(GREEN)  => Cleaned!$(DEF_COLOR)\n"
 
 
