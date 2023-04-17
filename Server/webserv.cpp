@@ -271,7 +271,7 @@ void WebServ::Send(SocketConnection *Connection)
                 close(Connection->socket_fd);
                 delete Connection;
             }
-            Connection->response.body.clear();
+            Connection->response.body = "";
         }
         else
         {
