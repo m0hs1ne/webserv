@@ -129,6 +129,7 @@ void checkCGI(Request &request, Response &response, Server &server)
         freeCharArray(envp);
         close(pipefd[1]);
         close(input);
+        unlink(request.fileName.c_str());
         std::string header = "";
         std::string *line = NULL;
         std::string buf;

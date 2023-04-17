@@ -30,20 +30,20 @@
 
         }
 
-        if ($_FILES['file']['error'] !== UPLOAD_ERR_OK) { die('Error uploading file'); }
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
             $file = $_FILES['file'];
             if ($file['error'] === UPLOAD_ERR_OK) {
                 $filename = basename($file['name']);
-                $upload_dir = '/Users/mabenchi/Desktop/webserv/Content/cgi-bin//tmp/';
+                $upload_dir = '/Users/mabenchi/Desktop/webserv/Content/cgi-bin/tmp/';
                 $upload_path = $upload_dir . $filename;
                 if (move_uploaded_file($file['tmp_name'], $upload_path)) {
-                    echo "File uploaded successfully.\n";
+                    echo "<br>File uploaded successfully.\n";
+                    echo "<img src='/cgi-bin/tmp/" . $filename . "'/>";
                 } else {
-                    echo "Error uploading file.\n";
+                    echo "<br>Error uploading file.\n";
                 }
             } else {
-                echo "Error: " . $file['error'] . "\n";
+                echo "<br>Error: " . $file['error'] . "\n";
             }
         }
     ?>
