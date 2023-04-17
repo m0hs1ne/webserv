@@ -178,9 +178,6 @@ void WebServ::Reciev(SocketConnection *Connection)
 {
     int ret = 0;
     char buffer[RD_BUFFER] = {0};
-    std::map<int, std::string> *code = new std::map<int, std::string>;
-    initHttpCode(*code);
-
     ret = read(Connection->socket_fd, buffer, RD_BUFFER - 1);
     if (ret < 0)
     {
@@ -201,7 +198,6 @@ void WebServ::Reciev(SocketConnection *Connection)
     if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
     {
         char *tmp = ft_strdup(buffer, ret);
-        Connection->response.codeMsg = code;
         Connection->response = Connection->request.handleRequest(tmp, *(Connection->server));
         delete[] tmp;
     }
@@ -221,7 +217,6 @@ void WebServ::Reciev(SocketConnection *Connection)
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
         AddEvent(Connection->socket_fd, EVFILT_WRITE, Connection);
     }
-    delete code;
 }
 
 void WebServ::Send(SocketConnection *Connection)

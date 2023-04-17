@@ -62,19 +62,7 @@ class Request
 
         Response handleRequest(char *buffer, Server &server);
 
-        Request(): openedFd(-2), bFd(-2)
-        {
-            this->chunkSize_chunked = 0;
-            this->chunkSize = 0;
-            this->received = 0;
-            this->ended = false;
-            this->location = 0;
-            this->fileName = "file_" + generateRandomString();
-        };
-        // Request(const Request &other){
-        //     (void)other;
-        // };
-        // Request &operator=(const Request &other){};
-        ~Request(){};
+        Request();
+        ~Request();
 };
 #endif

@@ -6,6 +6,19 @@
 
 std::string allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-=._~!*'():;%@+$,/?#[]' '";
 
+Request::Request() : openedFd(-2), bFd(-2)
+{
+    this->chunkSize_chunked = 0;
+    this->chunkSize = 0;
+    this->received = 0;
+    this->ended = false;
+    this->location = 0;
+    this->fileName = "file_" + generateRandomString();
+};
+
+Request::~Request()
+{
+}
 bool Request::urlDecode(Response &response)
 {
     std::ostringstream decoded;
@@ -87,7 +100,7 @@ void ParseHeaderAttr(std::string &buffer, Request &req)
     req.headerSize += l_size + 1;
     for (int i = 2; !line->empty(); i++)
     {
-        if(line->size() == 1 && (*line)[0] == '\r')
+        if (line->size() == 1 && (*line)[0] == '\r')
             break;
         splitArr = split(*line, ':', 1);
         delete line;
@@ -175,7 +188,7 @@ bool Request::matchLocation(Response &response, Server &server)
             return false;
         }
     }
-    else if(this->path != server.locations[location].name)
+    else if (this->path != server.locations[location].name)
         this->path = this->path.substr(server.locations[location].name.size());
     this->location = location;
     response.location = location;
@@ -202,15 +215,15 @@ void Request::checkPathFound(Response &response, Server &server)
 
 void Request::checkRedirection(Response &response, Server &server)
 {
-    if(this->path == "/" && !server.locations[response.location].index.empty() && response.code == 404)
+    if (this->path == "/" && !server.locations[response.location].index.empty() && response.code == 404)
     {
         response.code = 200;
         response.returnFile = response.root + server.locations[response.location].index;
     }
 
-     if (!server.locations[response.location].index.empty() &&\
-             response.returnFile.empty() &&\
-            response.fullPath[response.fullPath.size() - 1] == '/' && this->method == "GET" && !access(response.fullPath.c_str(), R_OK))
+    if (!server.locations[response.location].index.empty() &&
+        response.returnFile.empty() &&
+        response.fullPath[response.fullPath.size() - 1] == '/' && this->method == "GET" && !access(response.fullPath.c_str(), R_OK))
     {
         response.code = 200;
         response.returnFile = response.root + server.locations[response.location].index;
@@ -238,7 +251,7 @@ Response Request::handleRequest(char *buffer, Server &server)
         Response *response = new Response();
         Response resp;
         std::string *buff = new std::string();
-        
+
         buff->append(buffer, this->buffer_size);
         fillRequest(*buff);
         this->ok = false;

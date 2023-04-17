@@ -2,8 +2,6 @@
 
 static const char *methods[] = {"POST", "GET", "DELETE", nullptr};
 
-// extern std::map<int, std::string> code;
-
 size_t sToi(const std::string &str)
 {
     size_t value;
@@ -41,26 +39,6 @@ size_t countLines(std::string &src)
             ++lines;
     }
     return lines;
-}
-
-void initHttpCode(std::map<int, std::string> &code)
-{
-    if (!code.size())
-    {
-        code[501] = "501 Not Implemented";
-        code[500] = "500 Internal Server Error";
-        code[414] = "414 Request-URI Too Long";
-        code[413] = "413 Request Entity Too Large";
-        code[409] = "409 Conflict";
-        code[405] = "405 Method Not Allowed";
-        code[404] = "404 Not Found";
-        code[403] = "403 Forbidden";
-        code[400] = "400 Bad Request";
-        code[301] = "301 Moved Permanently";
-        code[204] = "204 No Content";
-        code[201] = "201 Created";
-        code[200] = "200 OK";
-    }
 }
 
 void freeCharArray(char **charArray)

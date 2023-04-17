@@ -203,7 +203,6 @@ void formCGIResponse(Response &response)
         std::string *line = NULL;
         std::string buf;
         size_t n = 1;
-        std::map<int, std::string> codeMsg = response.initHttpCode();
         char buffer[2048];
 
         while (n != 0)

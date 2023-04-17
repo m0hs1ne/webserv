@@ -2,7 +2,7 @@ SHELL = /bin/bash
 
 NAME		= webserv
 CC			= g++
-CFLAGS		= -Wall -Werror -Wextra -std=c++98
+CFLAGS		= -Wall -Werror -Wextra -std=c++98 -fsanitize=address -g
 RM			= rm -f
 ECHO		= echo -e
 

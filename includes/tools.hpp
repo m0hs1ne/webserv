@@ -25,7 +25,6 @@ public:
         return msg.c_str();
     }
 };
-// static std::map<int, std::string> code;
 char *ft_strdup(const char *str, size_t size);
 std::string getLastLine(const std::string& str);
 std::string setContentType(std::string path);

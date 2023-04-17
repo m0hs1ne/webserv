@@ -34,7 +34,7 @@
             $file = $_FILES['file'];
             if ($file['error'] === UPLOAD_ERR_OK) {
                 $filename = basename($file['name']);
-                $upload_dir = '/Users/mabenchi/Desktop/webserv/Content/cgi-bin/tmp/';
+                $upload_dir = '/Users/zboudair/Desktop/webserv/Content/cgi-bin/tmp/';
                 $upload_path = $upload_dir . $filename;
                 if (move_uploaded_file($file['tmp_name'], $upload_path)) {
                     echo "<br>File uploaded successfully.\n";
