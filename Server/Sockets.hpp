@@ -21,7 +21,7 @@ class SocketConnection
         std::string server_response;
         parsingConfig::server *server;
         uint64_t socket_fd;
-        struct sockaddr_in addr; // memset it // 0 '
+        struct sockaddr_in addr;
         int socket_port;
         long long  content_size;
         bool drop_connection;

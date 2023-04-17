@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallax Mousemove Effect | Change Background Position On Mousemove</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+
+    <div class="container">
+      <h2 class="object" data-value="3">Space<br><span>Background</span></h2>
+      <img src="1.png" class="object" data-value="-2" alt="">
+      <img src="2.png" class="object" data-value="6" alt="">
+      <img src="3.png" class="object" data-value="4" alt="">
+      <img src="4.png" class="object" data-value="-6" alt="">
+      <img src="5.png" class="object" data-value="8" alt="">
+      <img src="6.png" class="object" data-value="-4" alt="">
+      <img src="7.png" class="object" data-value="5" alt="">
+      <img src="8.png" class="object" data-value="-9" alt="">
+      <img src="9.png" class="object" data-value="-5" alt="">
+    </div>
+
+    <script type="text/javascript">
+    document.addEventListener("mousemove", parallax);
+    function parallax(e){
+      document.querySelectorAll(".object").forEach(function(move){
+
+        var moving_value = move.getAttribute("data-value");
+        var x = (e.clientX * moving_value) / 250;
+        var y = (e.clientY * moving_value) / 250;
+
+        move.style.transform = "translateX(" + x + "px) translateY(" + y + "px)";
+      });
+    }
+    </script>
+
+  </body>
+</html>

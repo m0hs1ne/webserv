@@ -1,4 +1,5 @@
 #include "WebServ.hpp"
+#include <arpa/inet.h>
 
 /*
 ** ------------------------------- CONSTRUCTOR --------------------------------
@@ -9,7 +10,7 @@ WebServ::WebServ(char *av)
     this->kq = kqueue();
     this->Answer = 0;
     this->servers = parsingConfig(av).getServers();
-    this->timeout.tv_sec = 1, this->timeout.tv_nsec = 100 * 500000;
+    this->timeout.tv_sec = 1, this->timeout.tv_nsec = 0;
 }
 
 // WebServ::WebServ( const WebServ & src )
@@ -22,6 +23,7 @@ WebServ::WebServ(char *av)
 
 // WebServ::~WebServ()
 // {
+//     close(this->kq);
 // }
 
 /*
@@ -61,8 +63,9 @@ void WebServ::RunServer()
                       << std::endl;
             continue;
         }
-        // std::cout << " Kq-> " << kq_return << std::endl;
         CheckEvents(revents, kq_return);
+        std::cout << "Kq => " << kq_return << std::endl;
+        // system("leaks webServer");
     }
 }
 
@@ -72,49 +75,55 @@ void WebServ::SetUpSockets()
     for (size_t i = 0; i < servers.size(); i++)
     {
         SocketConnection *Socket = new SocketConnection;
-        struct kevent event;
-        if (!(Socket->socket_fd = socket(AF_INET, SOCK_STREAM, 0)))
+        if ((Socket->socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
         {
             perror("socket failed");
             exit(EXIT_FAILURE);
         }
-        if (setsockopt(Socket->socket_fd, SOL_SOCKET, SO_REUSEADDR, &valread, sizeof(valread)))
+        if (setsockopt(Socket->socket_fd, SOL_SOCKET, SO_REUSEADDR, &valread, sizeof(valread)) == -1)
         {
             perror("setsockopt");
             exit(EXIT_FAILURE);
         }
+
         Socket->server = &servers[i];
         Socket->addr.sin_family = AF_INET;
-        Socket->addr.sin_addr.s_addr = INADDR_ANY;
         Socket->addr.sin_port = htons(servers[i].port);
+        if(servers[i].host == "localhost")
+            servers[i].host = "127.0.0.1";
+        if(inet_aton(servers[i].host.c_str(), &Socket->addr.sin_addr) == 0)
+        {
+            perror("inet failed");
+            exit(EXIT_FAILURE);
+        }
         Socket->socket_port = this->servers[i].port;
         Socket->IsPortSocket = 1;
         memset(Socket->addr.sin_zero, '\0', sizeof(Socket->addr.sin_zero));
-        if (bind(Socket->socket_fd, (struct sockaddr *)&Socket->addr, sizeof(Socket->addr)) < 0)
+        if (bind(Socket->socket_fd, (struct sockaddr *)&Socket->addr, sizeof(Socket->addr)) == -1)
         {
             perror("bind failed");
             exit(EXIT_FAILURE);
         }
-        if (listen(Socket->socket_fd, 128) < 0)
+        if (listen(Socket->socket_fd, 128) == -1)
         {
             perror("listen Failed");
             exit(EXIT_FAILURE);
         }
-        if(fcntl(Socket->socket_fd, F_SETFL, O_NONBLOCK) < 0)
+        if(fcntl(Socket->socket_fd, F_SETFL, O_NONBLOCK) == -1)
         {
             perror("fcntl failed");
             exit(EXIT_FAILURE);
         }
         std::cout << "Listening on port " << servers[i].port << std::endl;
-        EV_SET(&event, Socket->socket_fd, EVFILT_READ, EV_ADD, NOTE_TRIGGER, 0, reinterpret_cast<void *>(Socket));
-        kevent(this->kq, &event, 1, 0, 0, 0);
+        AddEvent(Socket->socket_fd, EVFILT_READ, Socket);
+   
     }
 }
 
 int WebServ::AcceptNewConnections(SocketConnection *Socket)
 {
     SocketConnection *new_Socket = new SocketConnection;
-
+    int valread = 1;
     socklen_t len = sizeof(Socket->addr);
     new_Socket->drop_connection = 0;
     new_Socket->data_s = 0;
@@ -125,6 +134,11 @@ int WebServ::AcceptNewConnections(SocketConnection *Socket)
     if(new_Socket->socket_fd < 0)
     {
         perror("Accept Failed");
+        exit(EXIT_FAILURE);
+    }
+    if (setsockopt(Socket->socket_fd, SOL_SOCKET, SO_NOSIGPIPE, &valread, sizeof(valread)) == -1)
+    {
+        perror("setsockopt");
         exit(EXIT_FAILURE);
     }
     if(fcntl(new_Socket->socket_fd, F_SETFL, O_NONBLOCK) < 0)
@@ -145,11 +159,6 @@ void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t
         Reciev(Connection);
     else if (filter == EVFILT_WRITE)
         Send(Connection);
-    else
-    {
-        std::cout << "Error" << std::endl;
-        exit(1);
-    }
 }
 
 int WebServ::CheckEvents(struct kevent *revents, size_t kq_return)
@@ -168,22 +177,19 @@ int WebServ::CheckEvents(struct kevent *revents, size_t kq_return)
 void WebServ::Reciev(SocketConnection *Connection)
 {
     int ret = 0;
-    char buffer[1025] = {0};
+    char buffer[RD_BUFFER] = {0};
     std::map<int, std::string> *code = new std::map<int, std::string>;
     initHttpCode(*code);
 
-    ret = read(Connection->socket_fd, buffer, 1024);
-    if (ret == 0)
+    ret = read(Connection->socket_fd, buffer, RD_BUFFER - 1);
+    if (ret < 0)
     {
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
         close(Connection->socket_fd);
         delete Connection;
         return;
     }
-    else if(ret < 0)
-        exit(0);
     buffer[ret] = '\0';
-    std::cout << "buffer-> " << buffer << std::endl;
     Connection->request.buffer_size = ret;
     if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
     {
@@ -195,9 +201,9 @@ void WebServ::Reciev(SocketConnection *Connection)
         if (Connection->request.method == "POST")
             handlingPost(*Connection);
         else if (Connection->request.method == "GET")
-            handlingGet(*Connection); // GET
+            handlingGet(*Connection);
         else if (Connection->request.method == "DELETE")
-            handlingDelete(*Connection); // DELETE
+            handlingDelete(*Connection);
     }
     else
         Connection->ended = true;
@@ -212,7 +218,7 @@ void WebServ::Reciev(SocketConnection *Connection)
 
 void WebServ::Send(SocketConnection *Connection)
 {
-    char buffer[1025] = {0};
+    char buffer[WR_BUFFER] = {0};
     int _return;
     if (!Connection->response.response.empty())
     {
@@ -229,13 +235,14 @@ void WebServ::Send(SocketConnection *Connection)
     }
     else if (Connection->response.fileFD != -2)
     {
-        _return = read(Connection->response.fileFD, buffer, 1024);
+        _return = read(Connection->response.fileFD, buffer, WR_BUFFER - 1);
         if (_return > 0)
         {
-            if (0 > write(Connection->socket_fd, buffer, _return))
+            if (0 > write(Connection->socket_fd, buffer, _return) || WR_BUFFER - 1 > _return)
             {
                 DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
                 close(Connection->socket_fd);
+                close(Connection->response.fileFD);
                 delete Connection;
                 return ;
             }
@@ -250,22 +257,31 @@ void WebServ::Send(SocketConnection *Connection)
     }
     else
     {
-        std::cout << "ENTER SEND" << std::endl;
-        write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size());
-        Connection->response.body.clear();
-        DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
-        close(Connection->socket_fd);
-        delete Connection;
-        return ;
+        if(!Connection->response.body.empty())
+        {
+            if(write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size()) < 0)
+            {
+                DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
+                close(Connection->socket_fd);
+                delete Connection;
+            }
+            Connection->response.body.clear();
+        }
+        else
+        {
+            DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
+            close(Connection->socket_fd);
+            delete Connection;
+        }
     }
 }
 
 void WebServ::AddEvent(int fd, int16_t filter, SocketConnection *udata)
 {
     struct kevent event;
+
     EV_SET(&event, fd, filter, EV_ADD, 0, 0, reinterpret_cast<void *>(udata));
     int err = kevent(this->kq, &event, 1, 0, 0, 0);
-    // std::cout << "err =>" << err << std::endl;
     if(err == -1)
     {
         perror("kevent Add Error");
@@ -277,9 +293,9 @@ void WebServ::AddEvent(int fd, int16_t filter, SocketConnection *udata)
 void WebServ::DeleteEvent(int fd, int16_t filter)
 {
     struct kevent event;
+
     EV_SET(&event, fd, filter, EV_DELETE, 0, 0, NULL);
     int err = kevent(this->kq, &event, 1, 0, 0, 0);
-    // std::cout << "err =>" << err << std::endl;
     if(err == -1)
     {
         perror("kevent Delete Error");

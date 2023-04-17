@@ -39,7 +39,7 @@ void fillFile(SocketConnection &connection, bool for_cgi)
                 connection.request.body.erase(0, line->size() + 1);
                 size -= line->size() + 1;
             }
-            std::cout << "size: " << size << std::endl;
+            // std::cout << "size: " << size << std::endl;
             delete line;
         }
         else
@@ -98,7 +98,7 @@ void fillFile(SocketConnection &connection, bool for_cgi)
         if (connection.request.received >= len)
             connection.ended = true;
     }
-    std::cout << "size: " << connection.request.openedFd << std::endl;
+    // std::cout << "size: " << connection.request.openedFd << std::endl;
     if (connection.ended && !for_cgi)
         close(connection.request.openedFd);
     connection.request.bodySize = 0;

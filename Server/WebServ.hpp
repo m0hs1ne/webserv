@@ -34,16 +34,8 @@ class WebServ
 		int AcceptNewConnections(SocketConnection *Socket);
 		void HandleEstablishedConnections(SocketConnection *Connection, int16_t  filter);
 		int CheckEvents(struct kevent *revents, size_t kq_return);
-		void read_socket();
-		void write_socket();
-		int is_readable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
-		int is_writable(struct kevent *revents, size_t kq_return, uint64_t socket_fd);
-		void drop_clients();
-		// void DeleteEvent(int fd);
-
 		void AddEvent(int fd, int16_t filter, SocketConnection *udata);
 		void DeleteEvent(int fd, int16_t filter);
-		
 		void Reciev(SocketConnection *Connection);
 		void Send(SocketConnection *Connection);
 		WebServ(char *av);

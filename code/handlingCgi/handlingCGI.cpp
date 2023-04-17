@@ -25,7 +25,7 @@ char **setEnv(Response response, Request &request, Server &server)
         stdEnv.push_back("CONTENT_LENGTH=" + out.str());
         if (request.attr.find("Content-Type") != request.attr.end())
             stdEnv.push_back("CONTENT_TYPE=" + request.attr["Content-Type"].erase(request.attr["Content-Type"].size() - 1, request.attr["Content-Type"].size()).erase(0, 1));
-        std::cout << "CONTENT_tyPE=" << request.attr["Content-Type"] << std::endl;
+        // std::cout << "CONTENT_tyPE=" << request.attr["Content-Type"] << std::endl;
     }
     if (request.attr.find("Cookie") != request.attr.end())
         stdEnv.push_back("HTTP_COOKIE=" + request.attr["Cookie"].erase(0,1));
