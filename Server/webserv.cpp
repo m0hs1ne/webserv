@@ -182,7 +182,6 @@ void WebServ::Reciev(SocketConnection *Connection)
     initHttpCode(*code);
 
     ret = read(Connection->socket_fd, buffer, RD_BUFFER - 1);
-    std::cout << "Recieved " << ret << " bytes" << std::endl;
     if (ret < 0)
     {
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
@@ -232,7 +231,6 @@ void WebServ::Send(SocketConnection *Connection)
     if (!Connection->response_ended && !Connection->response.formResponse(Connection->request, *(Connection->server)))
         return ;
     Connection->response_ended = true;
-    std::cout << "response.code: " << Connection->response.code << std::endl;
     if (!Connection->response.response.empty())
     {
         if (0 > write(Connection->socket_fd, Connection->response.response.c_str(), Connection->response.response.size()))
@@ -272,7 +270,6 @@ void WebServ::Send(SocketConnection *Connection)
     {
         if(!Connection->response.body.empty())
         {
-            std::cout << "Sending " << Connection->response.body.size() << " bytes" << std::endl;
             if(write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size()) < 0)
             {
                 DeleteEvent(Connection->socket_fd, EVFILT_WRITE);

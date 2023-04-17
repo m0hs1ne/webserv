@@ -71,7 +71,6 @@ void formPostResponse(Request &request, Response &response, Server &server)
     if (fileSize > server.locations[response.location].client_max_body_size)
     {
         response.code = 413;
-        std::cout << "fileName: " << request.fileName << std::endl;
         unlink(request.fileName.c_str());
     }
     if (server.error_pages.find(response.code) != server.error_pages.end())
@@ -250,7 +249,6 @@ bool Response::formResponse(Request &request, Server &server)
     if (this->cgi_pid != -2)
     {
         int pid = waitpid(this->cgi_pid, NULL, WNOHANG);
-        std::cout << "CGI PID: " << pid << std::endl;
         if (pid == 0)
             return false;
         this->cgi_pid = -2;

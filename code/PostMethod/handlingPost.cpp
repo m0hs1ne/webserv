@@ -39,7 +39,6 @@ void fillFile(SocketConnection &connection)
                 connection.request.body.erase(0, line->size() + 1);
                 size -= line->size() + 1;
             }
-            std::cout << "size: " << size << std::endl;
             delete line;
         }
         else
@@ -134,7 +133,6 @@ void handlingPost(SocketConnection &connection)
     std::string contentLength;
     std::string body;
     std::string uploadPath;
-    std::cout <<"upload_enable: "<< connection.server->locations[connection.response.location].upload_enable << std::endl;
     if (!connection.server->locations[connection.response.location].upload_enable)
     {
         connection.response.code = 405;
