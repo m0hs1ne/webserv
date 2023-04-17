@@ -29,10 +29,7 @@ char **setEnv(Response response, Request &request, Server &server, int input)
         off_t size = st.st_size;
         stdEnv.push_back("CONTENT_LENGTH=" + itos(size));
         if (request.attr.find("Content-Type") != request.attr.end())
-        {
             stdEnv.push_back("CONTENT_TYPE=" + request.attr["Content-Type"].erase(request.attr["Content-Type"].size() - 1, request.attr["Content-Type"].size()).erase(0,1));
-            std::cout << stdEnv[stdEnv.size() - 1] << std::endl;
-        }
     }
     if (request.attr.find("Cookie") != request.attr.end())
         stdEnv.push_back("HTTP_COOKIE=" + request.attr["Cookie"].erase(0,1));
@@ -42,7 +39,6 @@ char **setEnv(Response response, Request &request, Server &server, int input)
     stdEnv.push_back("PATH_TRANSLATED=" + request.path);
     stdEnv.push_back("REDIRECT_STATUS=301");
     stdEnv.push_back("PATH_INFO=" + request.path);
-    std::cout << stdEnv[stdEnv.size() - 1] << std::endl;
     return convertToCharArray(stdEnv);
 }
 
@@ -74,8 +70,6 @@ void checkCGI(Request &request, Response &response, Server &server)
     int pipefd[2];
     int input = 0;
     pid_t pid;
-    char buffer[2048];
-    std::cout << "response.fullPath: " << response.fullPath << std::endl;
     char *const args[] = {(char *)cgiPaths.c_str(), (char *)(response.fullPath).c_str(), NULL};
     char **envp;
 
@@ -94,12 +88,13 @@ void checkCGI(Request &request, Response &response, Server &server)
 
     envp = setEnv(response, request, server, input);
 
-    pid = fork();
+    response.cgi_pid = fork();
+    pid = response.cgi_pid;
     if (pid == -1)
     {
         std::cerr << "Error forking process\n";
         return;
-    }
+    }        
     if (pid == 0)
     {
         close(pipefd[0]);
@@ -130,48 +125,9 @@ void checkCGI(Request &request, Response &response, Server &server)
         close(pipefd[1]);
         close(input);
         unlink(request.fileName.c_str());
-        std::string header = "";
-        std::string *line = NULL;
-        std::string buf;
-        size_t n = 1;
-        std::map<int, std::string> codeMsg = response.initHttpCode();
-
-        while (n != 0)
-        {
-            n = read(pipefd[0], buffer, sizeof(buffer) - sizeof(char));
-            response.bodySize += n;
-            buffer[n] = '\0';
-            buf.append(buffer, n);
-        }
-        if(response.bodySize == 0)
-        {
-            buf.append("Content-Type: text/html\r\n");
-            buf.append("\r\n");
-            buf.append("<h1>500 Internal Error</h1>\r\n");
-            buf.append("Error executing CGI\n");
-            response.bodySize = buf.size();
-            response.code = 500;
-        }
-        size_t headerSize = 0;
-        size_t lineSize = 0;
-        line = getLine(buf, 0, response.bodySize, &lineSize, "size");
-        for (int i = 1; !line->empty() && *line != "\r"; i++)
-        {
-            header.append(*line + "\n");
-            delete line;
-            headerSize += lineSize + 1;
-            line = getLine(buf, i, response.bodySize, &lineSize, "size");
-        }
-        buf.erase(0, header.size() + 2);
-        response.bodySize -= header.size() + 2;
-        response.cgiheader = header;
-        if (!buf.empty())
-            response.body.append(buf.c_str(), response.bodySize);
-        else
-            response.body.append(" ");
+        response.cgi_pid = pid;
+        response.cgi_output = pipefd[0];
         dup2(saveStdin, STDIN_FILENO);
 	    dup2(saveStdout, STDOUT_FILENO);
-        close(pipefd[0]);
-        wait(NULL);
-        }
+    }
 }

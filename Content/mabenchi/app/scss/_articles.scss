@@ -1,0 +1,63 @@
+.article {
+  background-color: $verylightgray;
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.875rem;
+    &:not(:last-child) {
+      margin-right: 0.875rem;
+    }
+    @include breakpoints-up(medium) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @include breakpoints-up(large) {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  &__item {
+    background-color: $white;
+    border-radius: 0.3125rem;
+    overflow: hidden;
+    box-shadow: 0px 3px 12px rgba($color: #000000, $alpha: 0.15);
+    transition: all 300ms ease-in-out;
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  &__img {
+    height: 12.5rem;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+  }
+
+  &__text {
+    color: $grayishblue;
+    p {
+      margin-top: 0;
+    }
+    padding: 1.875rem 1.875rem 2.5rem 1.875rem;
+    @include breakpoints-up(medium) {
+      padding: 1.875rem 1.5625rem;
+    }
+  }
+  &__author {
+    font-size: 0.625rem;
+    margin-bottom: 1rem;
+  }
+
+  &__title {
+    font-size: 1.0625rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+    color: $darkblue;
+  }
+
+  &__description {
+    font-size: 0.8125rem;
+    margin-bottom: 0;
+  }
+}

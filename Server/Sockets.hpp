@@ -14,6 +14,7 @@
 class SocketConnection
 {
     public:
+        bool response_ended;
         bool ended;
         Response response;
         Request request; 

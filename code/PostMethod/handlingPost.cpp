@@ -134,6 +134,21 @@ void handlingPost(SocketConnection &connection)
     std::string contentLength;
     std::string body;
     std::string uploadPath;
+    std::cout <<"upload_enable: "<< connection.server->locations[connection.response.location].upload_enable << std::endl;
+    if (!connection.server->locations[connection.response.location].upload_enable)
+    {
+        connection.response.code = 405;
+        connection.ended = true;
+        return;
+    }
+    if (!connection.server->locations[connection.response.location].cgi_path.empty()
+            && !connection.server->locations[connection.response.location].upload_enable)
+    {
+        connection.response.code = 403;
+        connection.ended = true;
+        return;
+    }
+
 
     if (connection.request.openedFd != -2 && connection.server->locations[connection.response.location].cgi_path.empty())
     {
@@ -174,15 +189,6 @@ void handlingPost(SocketConnection &connection)
     if (!connection.server->locations[connection.response.location].cgi_path.empty())
     {
         process_for_cgi(connection, uploadPath);
-        return;
-    }
-    else
-    {
-        if (!connection.server->locations[connection.response.location].upload_enable)
-            connection.response.code = 405;
-        else
-            connection.response.code = 403;
-        connection.ended = true;
         return;
     }
 

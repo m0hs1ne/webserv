@@ -50,7 +50,7 @@ void WebServ::RunServer()
     while (true)
     {
         size_t kq_return = 0;
-        struct kevent revents[MAX_INT];
+        struct kevent revents[MAX_INT]; 
         kq_return = kevent(this->kq, 0, 0, revents, MAX_INT, &timeout);
         if (kq_return < 0)
         {
@@ -60,11 +60,12 @@ void WebServ::RunServer()
         if (kq_return == 0)
         {
             std::cout << "timed out\n"
-                      << std::endl;
+                    << std::endl;
             continue;
         }
         CheckEvents(revents, kq_return);
         std::cout << "Kq => " << kq_return << std::endl;
+
         // system("leaks webServer");
     }
 }
@@ -131,6 +132,7 @@ int WebServ::AcceptNewConnections(SocketConnection *Socket)
     new_Socket->IsPortSocket = 0;
     new_Socket->server = Socket->server;
     new_Socket->socket_fd = accept(Socket->socket_fd, (sockaddr *)&Socket->addr, &len);
+    new_Socket->response_ended = false;
     if(new_Socket->socket_fd < 0)
     {
         perror("Accept Failed");
@@ -217,7 +219,6 @@ void WebServ::Reciev(SocketConnection *Connection)
         Connection->ended = true;
     if (Connection->ended)
     {
-        Connection->response.formResponse(Connection->request, *(Connection->server));
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
         AddEvent(Connection->socket_fd, EVFILT_WRITE, Connection);
     }
@@ -228,9 +229,12 @@ void WebServ::Send(SocketConnection *Connection)
 {
     char buffer[WR_BUFFER] = {0};
     int _return;
+    if (!Connection->response_ended && !Connection->response.formResponse(Connection->request, *(Connection->server)))
+        return ;
+    Connection->response_ended = true;
+    std::cout << "response.code: " << Connection->response.code << std::endl;
     if (!Connection->response.response.empty())
     {
-        std::cout << "Sending " << Connection->response.response.size() << " bytes" << std::endl;
         if (0 > write(Connection->socket_fd, Connection->response.response.c_str(), Connection->response.response.size()))
         {
             DeleteEvent(Connection->socket_fd, EVFILT_WRITE);

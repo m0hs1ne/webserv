@@ -135,6 +135,7 @@ parsingConfig::location parsingConfig::initLoc()
     l.autoindex = false;
     l.upload_path = "";
     l.client_max_body_size = 1048576; // bytes
+    l.upload_enable = false;
     return l;
 }
 

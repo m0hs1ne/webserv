@@ -8,6 +8,8 @@ Response::Response()
     this->returnFile = "";
     this->mNotAllow = false;
     this->fileFD = -2;
+    this->cgi_output = -2;
+    this->cgi_pid = -2;
 }
 
 Response::Response(const Response& other)
@@ -196,8 +198,64 @@ void formGetResponse(Response &response, Server &server)
     response.response += "\r\n";
 }
 
-void Response::formResponse(Request &request, Server &server)
+void formCGIResponse(Response &response)
 {
+        std::string header = "";
+        std::string *line = NULL;
+        std::string buf;
+        size_t n = 1;
+        std::map<int, std::string> codeMsg = response.initHttpCode();
+        char buffer[2048];
+
+        while (n != 0)
+        {
+            n = read(response.cgi_output, buffer, sizeof(buffer) - sizeof(char));
+            response.bodySize += n;
+            buffer[n] = '\0';
+            buf.append(buffer, n);
+        }
+        if(response.bodySize == 0)
+        {
+            buf.append("Content-Type: text/html\r\n");
+            buf.append("\r\n");
+            buf.append("<h1>500 Internal Error</h1>\r\n");
+            buf.append("Error executing CGI\n");
+            response.bodySize = buf.size();
+            response.code = 500;
+        }
+        size_t headerSize = 0;
+        size_t lineSize = 0;
+        line = getLine(buf, 0, response.bodySize, &lineSize, "size");
+        for (int i = 1; !line->empty() && *line != "\r"; i++)
+        {
+            header.append(*line + "\n");
+            delete line;
+            headerSize += lineSize + 1;
+            line = getLine(buf, i, response.bodySize, &lineSize, "size");
+        }
+        delete line;
+        buf.erase(0, header.size() + 2);
+        response.bodySize -= header.size() + 2;
+        response.cgiheader = header;
+        if (!buf.empty())
+            response.body.append(buf.c_str(), response.bodySize);
+        else
+            response.body.append(" ");
+        
+        close(response.cgi_output);
+}
+
+bool Response::formResponse(Request &request, Server &server)
+{
+    if (this->cgi_pid != -2)
+    {
+        int pid = waitpid(this->cgi_pid, NULL, WNOHANG);
+        std::cout << "CGI PID: " << pid << std::endl;
+        if (pid == 0)
+            return false;
+        this->cgi_pid = -2;
+        formCGIResponse(*this);
+    }
     if (request.method == "GET")
         formGetResponse(*this, server);
     else if (request.method == "POST")
@@ -206,6 +264,7 @@ void Response::formResponse(Request &request, Server &server)
         formDeleteResponse(*this, server);
     else if (this->mNotAllow)
         formNotAllowedResponse(*this, server);
+    return true;
 }
 
 Response::~Response(){}

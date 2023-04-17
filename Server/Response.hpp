@@ -15,6 +15,8 @@ class Response
         int code;
         int location;
         int fileFD;
+        int cgi_output;
+        int cgi_pid;
         size_t bodySize;
         std::string codeMessage;
         std::string returnFile;
@@ -32,7 +34,7 @@ class Response
         Response();
         Response(const Response& other);
         Response& operator=(const Response& other);
-        void formResponse(Request &request, Server &server);
+        bool formResponse(Request &request, Server &server);
         std::map<int, std::string> initHttpCode();
         ~Response();
 };
