@@ -150,8 +150,6 @@ int WebServ::AcceptNewConnections(SocketConnection *Socket)
     return 1;
 }
 
-size_t fullsize = 0;
-
 void WebServ::HandleEstablishedConnections(SocketConnection *Connection, int16_t filter)
 {
 
@@ -182,7 +180,15 @@ void WebServ::Reciev(SocketConnection *Connection)
     initHttpCode(*code);
 
     ret = read(Connection->socket_fd, buffer, RD_BUFFER - 1);
+    std::cout << "Recieved " << ret << " bytes" << std::endl;
     if (ret < 0)
+    {
+        DeleteEvent(Connection->socket_fd, EVFILT_READ);
+        close(Connection->socket_fd);
+        delete Connection;
+        return;
+    }
+    else if (ret == 0)
     {
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
         close(Connection->socket_fd);
@@ -193,8 +199,10 @@ void WebServ::Reciev(SocketConnection *Connection)
     Connection->request.buffer_size = ret;
     if (Connection->request.method.empty() || Connection->request.bFd != -2 || Connection->request.openedFd != -2)
     {
+        char *tmp = ft_strdup(buffer, ret);
         Connection->response.codeMsg = code;
-        Connection->response = Connection->request.handleRequest(ft_strdup(buffer, ret), *(Connection->server));
+        Connection->response = Connection->request.handleRequest(tmp, *(Connection->server));
+        delete[] tmp;
     }
     if (Connection->request.ok)
     {
@@ -222,6 +230,7 @@ void WebServ::Send(SocketConnection *Connection)
     int _return;
     if (!Connection->response.response.empty())
     {
+        std::cout << "Sending " << Connection->response.response.size() << " bytes" << std::endl;
         if (0 > write(Connection->socket_fd, Connection->response.response.c_str(), Connection->response.response.size()))
         {
             DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
@@ -259,6 +268,7 @@ void WebServ::Send(SocketConnection *Connection)
     {
         if(!Connection->response.body.empty())
         {
+            std::cout << "Sending " << Connection->response.body.size() << " bytes" << std::endl;
             if(write(Connection->socket_fd, Connection->response.body.c_str(), Connection->response.body.size()) < 0)
             {
                 DeleteEvent(Connection->socket_fd, EVFILT_WRITE);
