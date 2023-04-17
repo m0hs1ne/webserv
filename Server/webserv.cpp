@@ -182,7 +182,7 @@ void WebServ::Reciev(SocketConnection *Connection)
     initHttpCode(*code);
 
     ret = read(Connection->socket_fd, buffer, RD_BUFFER - 1);
-    if (ret < 0)
+    if (ret <= 0)
     {
         DeleteEvent(Connection->socket_fd, EVFILT_READ);
         close(Connection->socket_fd);

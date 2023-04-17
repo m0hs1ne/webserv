@@ -193,6 +193,7 @@ void Request::checkPathFound(Response &response, Server &server)
     else
         response.root = server.root;
     response.fullPath = response.root + this->path;
+    this->fullPath = response.fullPath;
     if ((response.fullPath[response.fullPath.size() - 1] != '/' && !access(response.fullPath.c_str(), R_OK)))
         response.returnFile = response.fullPath;
     else
@@ -262,6 +263,7 @@ Response Request::handleRequest(char *buffer, Server &server)
         Response response;
         response.code = 200;
         response.location = this->location;
+        response.fullPath = this->fullPath;
         return response;
     }
 }
