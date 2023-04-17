@@ -18,7 +18,7 @@ int hexToDec(const std::string &hex)
 }
 
 
-void fillFile(SocketConnection &connection, bool for_cgi)
+void fillFile(SocketConnection &connection)
 {
     std::string chunk;
     std::string *line;
@@ -39,7 +39,7 @@ void fillFile(SocketConnection &connection, bool for_cgi)
                 connection.request.body.erase(0, line->size() + 1);
                 size -= line->size() + 1;
             }
-            // std::cout << "size: " << size << std::endl;
+            std::cout << "size: " << size << std::endl;
             delete line;
         }
         else
@@ -98,12 +98,35 @@ void fillFile(SocketConnection &connection, bool for_cgi)
         if (connection.request.received >= len)
             connection.ended = true;
     }
-    // std::cout << "size: " << connection.request.openedFd << std::endl;
-    if (connection.ended && !for_cgi)
+    if (connection.ended)
+    {
         close(connection.request.openedFd);
+        connection.request.openedFd = -2;
+    }
     connection.request.bodySize = 0;
-   
     connection.request.body.clear();
+}
+
+void process_for_cgi(SocketConnection &connection, std::string uploadPath)
+{
+    if (connection.request.openedFd == -2)
+    {
+        std::string type = "";
+        if (!connection.request.contentType.empty())
+            type = connection.server->typeToExt[connection.request.contentType.erase(0, 1).erase(connection.request.contentType.size() - 1, 1)];
+        connection.request.fileName = uploadPath + "/" + connection.request.fileName + type;
+        connection.response.fileName = connection.request.fileName;
+        connection.request.openedFd = open((connection.request.fileName).c_str(), O_CREAT | O_RDWR | O_APPEND, 0777);
+        if (connection.request.openedFd == -1)
+        {
+            connection.response.code = 500;
+            connection.request.ended = true;
+            return;
+        }
+    }
+    fillFile(connection);
+    if (connection.ended)
+        checkCGI(connection.request, connection.response, *(connection.server));
 }
 
 void handlingPost(SocketConnection &connection)
@@ -112,22 +135,14 @@ void handlingPost(SocketConnection &connection)
     std::string body;
     std::string uploadPath;
 
-    // if (connection.server->locations[connection.response.location].upload_enable && !connection.server->locations[connection.response.location].cgi_path.empty())
-    // {
-    //     connection.response.code = 500;
-    //     std::cerr << "Error: CGI and Upload conflict." << std::endl;
-    //     return;
-    // }
-
-
-    if (connection.request.ended)
+    if (connection.request.openedFd != -2 && connection.server->locations[connection.response.location].cgi_path.empty())
     {
-        close(connection.request.openedFd);
+        fillFile(connection);
         return;
     }
-    else if (connection.request.openedFd != -2)
+    else if (connection.request.openedFd != -2 && !connection.server->locations[connection.response.location].cgi_path.empty())
     {
-        fillFile(connection, 0);
+        process_for_cgi(connection, uploadPath);
         return;
     }
 
@@ -156,11 +171,9 @@ void handlingPost(SocketConnection &connection)
             }
         }
     }
-    else if (!connection.server->locations[connection.response.location].cgi_path.empty())
+    if (!connection.server->locations[connection.response.location].cgi_path.empty())
     {
-        checkCGI(connection.request, connection.response, *(connection.server));
-        connection.response.code = 200;
-        connection.ended = true;
+        process_for_cgi(connection, uploadPath);
         return;
     }
     else
@@ -207,7 +220,7 @@ void handlingPost(SocketConnection &connection)
             connection.request.ended = true;
             return;
         }
-        fillFile(connection, 0);
+        fillFile(connection);
         connection.response.code = 201;
         return;
     }

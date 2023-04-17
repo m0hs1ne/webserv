@@ -47,6 +47,7 @@ class Request
         std::string contentType;
         std::string uploadPath;
         std::string lastLine;
+        std::string fullPath;
         int location;
         int i;
 
