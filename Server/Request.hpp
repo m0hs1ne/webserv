@@ -47,6 +47,7 @@ class Request
         std::string contentType;
         std::string uploadPath;
         std::string lastLine;
+        int location;
         int i;
 
         typedef struct parsingConfig::server Server;
@@ -66,6 +67,7 @@ class Request
             this->chunkSize = 0;
             this->received = 0;
             this->ended = false;
+            this->location = 0;
             this->fileName = "file_" + generateRandomString();
         };
         // Request(const Request &other){

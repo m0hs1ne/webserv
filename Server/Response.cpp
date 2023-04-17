@@ -66,6 +66,9 @@ void formPostResponse(Request &request, Response &response, Server &server)
         fileSize = oss.tellg();
         oss.close();
     }
+    std::cout << "fileSize: " << fileSize << std::endl;
+    std::cout << "client_max_body_size: " << server.locations[response.location].client_max_body_size << std::endl;
+    std::cout << "location: " << response.location << std::endl;
     if (fileSize > server.locations[response.location].client_max_body_size)
     {
         response.code = 413;

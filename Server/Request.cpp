@@ -177,6 +177,7 @@ bool Request::matchLocation(Response &response, Server &server)
     }
     else if(this->path != server.locations[location].name)
         this->path = this->path.substr(server.locations[location].name.size());
+    this->location = location;
     response.location = location;
     // if(!checkPathFound(response, server))
     //     return false;
@@ -245,9 +246,9 @@ Response Request::handleRequest(char *buffer, Server &server)
             matchLocation(*response, server) &&
             methodAllowed(*response, server))
         {
-
             this->ok = true;
         }
+        response->location = this->location;
         resp = *response;
         delete response;
         delete buff;
@@ -255,10 +256,12 @@ Response Request::handleRequest(char *buffer, Server &server)
     }
     else
     {
+
         this->method = "POST";
         this->body.append(buffer, this->buffer_size);
         Response response;
         response.code = 200;
+        response.location = this->location;
         return response;
     }
 }
