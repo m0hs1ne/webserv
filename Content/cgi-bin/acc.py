@@ -102,23 +102,17 @@ def handleLogin(cookie):
     if username == None:
         printLogin()
     elif firstname == None:
-        print(username, file=sys.stderr)
         session = authUser(form.getvalue('username'), form.getvalue('password'))
         if(session == None):
             printUserMsg("Failed To Login, Username or Passowrd is wrong!")
         else:
-            if os.path.exists('Content/cgi-bin/user_database'):
-                with open('Content/cgi-bin/user_database', 'rb') as f:
-                    database = pickle.load(f)
-                    if username in database.user_pass:
-                        print("Correct Crenditales :D",file=sys.stderr)
-                        cookie.clear()
-                        cookie["SID"] = session.getSid()
-                        cookie["SID"]["SameSite"] = "None"
-                        cookie["SID"]["expires"] = 120 # Session Expires after 2 mins
-                        print(cookie.output() + "\r")
-                        print("location: /cgi-bin/acc.py\r")
-                        printAccPage(session)
+            cookie.clear()
+            cookie["SID"] = session.getSid()
+            cookie["SID"]["SameSite"] = "None"
+            cookie["SID"]["expires"] = 120 # Session Expires after 2 mins
+            print(cookie.output() + "\r")
+            print("location: /cgi-bin/acc.py\r")
+            printAccPage(session)
     else :
         if os.path.exists('Content/cgi-bin/user_database'):
             with open('Content/cgi-bin/user_database', 'rb') as f:
