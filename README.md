@@ -2,6 +2,10 @@
 
 This is a non-blocking HTTP server implementation that uses the kqueue system call for I/O operations. It is designed to be fast, efficient, and scalable, handling multiple connections simultaneously with minimal resource consumption.
 
+We built it together:
+[Mabenchi](https://github.com/MarouaneBenchiekh)
+[Zakaria](https://github.com/zakariaboudaira)
+
 ## Features
 
 - Takes a configuration file as an argument or uses a default path
