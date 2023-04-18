@@ -39,7 +39,7 @@ void handleDir(Request &request, Response &response, Server &server)
         }
     }
         
-    else if(server.locations[response.location].index.empty())
+    else if(server.locations[response.location].index.empty() && request.path != "/")
     {
         response.code = 403;
     }

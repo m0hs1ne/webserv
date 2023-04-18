@@ -2,7 +2,7 @@ SHELL = /bin/bash
 
 NAME		= webserv
 CC			= g++
-CFLAGS		= -Wall -Werror -Wextra -std=c++98 -fsanitize=address -g
+CFLAGS		= -Wall -Werror -Wextra -std=c++98
 RM			= rm -f
 ECHO		= echo -e
 
@@ -35,6 +35,8 @@ fclean:		clean
 			@$(RM) $(NAME)
 			@find . -name ".DS_Store" -delete
 			@rm -rf webserv.dSYM
+			@rm -rf Content/cgi-bin/sessions/*
+			@rm -rf Content/cgi-bin/user_database
 			@$(ECHO) -n "$(CYAN)[webServ]:\texec. files$(DEF_COLOR)$(GREEN)  => Cleaned!$(DEF_COLOR)\n"
 
 
