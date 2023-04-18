@@ -1,0 +1,74 @@
+.hero {
+  @include breakpoints-up(large) {
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+  }
+
+  &__img {
+    position: relative;
+
+    background-image: url("/mabenchi/images/bg-intro-mobile.svg");
+    background-size: cover;
+    background-repeat: no-repeat;
+
+    background-position: center center;
+    min-height: 17.5rem;
+
+    @include breakpoints-up(medium) {
+      min-height: 25rem;
+    }
+
+    @include breakpoints-up(large) {
+      flex: 3;
+      //background-image: url("/images/bg-intro-desktop.svg");
+      height: 40.9375rem;
+      //background-position: left center;
+      background-image: none;
+      &::before {
+        content: "";
+        position: absolute;
+        background-image: url("/mabenchi/images/bg-intro-desktop.svg");
+        background-size: 100%;
+        background-repeat: no-repeat;
+        background-position: center bottom;
+        height: 100%;
+        width: 170%;
+      }
+    }
+
+    &::after {
+      content: "";
+      position: absolute;
+      background-image: url("/images/image-mockups.png");
+      background-size: 90%;
+      background-repeat: no-repeat;
+      background-position: center bottom;
+      height: 100%;
+      width: 100%;
+      @include breakpoints-up(medium) {
+        background-size: 72%;
+      }
+      @include breakpoints-up(large) {
+        background-size: 90%;
+        width: 120%;
+        height: 120%;
+        left: 20%;
+        top: -10%;
+      }
+    }
+  }
+  &__text {
+    @include breakpoints-up(large) {
+      flex: 2;
+      text-align: left;
+    }
+    text-align: center;
+  }
+}
+.background {
+  background-color: $verylightgray;
+  @include breakpoints-up(large) {
+    max-height: 36.85rem;
+  }
+}

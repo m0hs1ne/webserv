@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- displays site properly based on user's device -->
+
+  <link rel="icon" type="image/png" sizes="32x32" href="./mabenchi/images/favicon-32x32.png">
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/mabenchi/app/scss/style.css">
+  <title>Easybank landing page</title>
+
+  <!-- Feel free to remove these styles or customise in your own stylesheet 👍 -->
+  <style>
+    .attribution { font-size: 11px; text-align: center; }
+    .attribution a { color: hsl(228, 45%, 44%); }
+  </style>
+</head>
+<body>
+  <header class="header ">
+    <div class="container">
+    <div id="overlay" class="overlay hide-for-desktop">
+
+    </div>
+
+    <nav class="flex flex-jc-sb flex-ai-c">
+      <a class="header__logo" href="#">
+        <img src="/mabenchi/images/logo.svg" alt="Easybank" >
+      </a>
+      <a id="humburger" class="header__toggle hide-for-desktop" href="#">
+        <span></span>
+        <span></span>
+        <span></span>
+      </a>
+      <div class="header__links hide-for-mobile">
+        <a href="#">Home</a><a href="#">About</a><a href="#">Contact</a><a href="#">Blog</a><a href="#">Careers</a>
+      </div>
+      <button class="hide-for-mobile" type="button">Request Invite</button>
+    </nav>
+    <div id="menu" class="header__menu hide-for-desktop">
+      <a href="#">Home</a><a href="#">About</a><a href="#">Contact</a><a href="#">Blog</a><a href="#">Careers</a>
+    </div>
+  </div>
+  </header>
+
+  <div class="background">
+  <section class="hero container ">
+    <div class="hero__img">
+    
+  </div>
+    <div class="hero__text container--p">
+      <h1>
+        Next generation digital banking
+      </h1>
+      <p>
+        Take your financial life online. Your Easybank account will be a one-stop-shop 
+  for spending, saving, budgeting, investing, and much more.
+      </p>
+      <button  type="button">Request Invite</button>
+
+    </div>
+  </section>
+</div>
+
+  <section class="feature">
+    <div class="container container--p">
+      <div class="feature__intro">
+        <h2> Why choose Easybank?</h2>
+        <p >  We leverage Open Banking to turn your bank account into your financial hub. Control 
+          your finances like never before.</p>
+      </div>
+
+      <div class="feature__items">
+        <div class="feature__item">
+          <div class="feature__icon">
+            <img src="/mabenchi/images/icon-online.svg" alt="">
+          </div>
+          <h3 class="feature__title">Online Banking</h3>
+          <p class="feature__description">
+            Our modern web and mobile applications allow you to keep track of your finances 
+            wherever you are in the world.
+          </p>
+        </div>
+      <div class="feature__item">
+        <div class="feature__icon">
+          <img src="/mabenchi/images/icon-budgeting.svg" alt="">
+        </div>
+        <h3 class="feature__title">Simple Budgeting</h3>
+        <p class="feature__description">
+          See exactly where your money goes each month. Receive notifications when you’re 
+          close to hitting your limits.
+        </p>
+      </div>
+      <div class="feature__item">
+        <div class="feature__icon">
+          <img src="/mabenchi/images/icon-onboarding.svg" alt="">
+        </div>
+        <h3 class="feature__title">Fast Onboarding</h3>
+        <p class="feature__description">  We don’t do branches. Open your account in minutes online and start taking control 
+          of your finances right away.</p>
+      </div>
+      <div class="feature__item">
+        <div class="feature__icon">
+          <img src="/mabenchi/images/icon-api.svg" alt="">
+        </div>
+        <h3 class="feature__title">Open API</h3>
+        <p class="feature__description">  Manage your savings, investments, pension, and much more from one account. Tracking 
+          your money has never been easier.</p>
+      </div>
+
+  </div>
+  </section>
+
+  <section class="article">
+    <div class="container container--p">
+      <h2 class="article__latest">Latest Articles</h2>
+      <div class="article__grid">
+
+        <a href="#" class="article__item">
+          <div class="article__img" style="background-image: url('/mabenchi/images/image-currency.jpg');"></div>
+          <div class="article__text">
+            <p class="article__author">By Claire Robinson</p>
+            <p class="article__title">Receive money in any currency with no fees</p>
+            <p class="article__description">
+              The world is getting smaller and we’re becoming more mobile. So why should you be 
+    forced to only receive money in a single …
+            </p>
+          </div>
+      </a>
+        <a href="#" class="article__item">
+          <div class="article__img" style="background-image: url('/mabenchi/images/image-restaurant.jpg');"></div>
+          <div class="article__text ">
+            <p class="article__author">By Wilson Hutton</p>
+            <p class="article__title">  Treat yourself without worrying about money</p>
+            <p class="article__description">
+              
+  Our simple budgeting feature allows you to separate out your spending and set 
+  realistic limits each month. That means you …
+            </p>
+          </div>
+      </a>
+        <a href="#" class="article__item">
+          <div class="article__img" style="background-image: url('/mabenchi/images/image-plane.jpg');"></div>
+          <div class="article__text">
+            <p class="article__author">  By Wilson Hutton</p>
+            <p class="article__title">Take your Easybank card wherever you go</p>
+            <p class="article__description">
+              We want you to enjoy your travels. This is why we don’t charge any fees on purchases 
+              while you’re abroad. We’ll even show you …
+            </p>
+          </div>
+      </a>
+        <a href="#" class="article__item">
+          <div class="article__img" style="background-image: url('/mabenchi/images/image-confetti.jpg');"></div>
+          <div class="article__text">
+            <p class="article__author">By Claire Robinson</p>
+            <p class="article__title">  Our invite-only Beta accounts are now live!</p>
+            <p class="article__description">
+ 
+              After a lot of hard work by the whole team, we’re excited to launch our closed beta. 
+              It’s easy to request an invite through the site ...
+            </p>
+          </div>
+      </a>
+      
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+
+    <a class="footer__logo" href="#">
+      <img src="/mabenchi/images/logo_white.svg" alt="Easybank">
+    </a>
+
+    <div class="footer__social">
+      <a href="#">
+        <img src="/mabenchi/images/icon-facebook.svg" alt="facebook">
+      </a>
+      <a href="#">
+        <img src="/mabenchi/images/icon-youtube.svg" alt="youtube">
+      </a>
+      <a href="#">
+        <img src="/mabenchi/images/icon-twitter.svg" alt="twitter">
+      </a>
+      <a href="#">
+        <img src="/mabenchi/images/icon-pinterest.svg" alt="pintrest">
+      </a>
+      <a href="#">
+        <img src="/mabenchi/images/icon-instagram.svg" alt="icon-instagram">
+      </a>
+    </div>
+
+    <div class="footer__links col1">
+      <a href="#">About Us</a>
+      <a href="#">Contact</a>
+      <a href="#">Blog</a>
+    </div>
+
+    <div class="footer__links col2">
+      <a href="#">Careers</a>
+      <a href="#">Support</a>
+      <a href="#">Privacy Policy</a>
+    </div>
+
+    <div class="footer__cta">
+      <a class="button" href="#">Request Invite</a>
+    </div>
+
+    <div class="footer__copyright">
+      © Easybank. All Rights Reserved
+    </div>
+
+  </footer>
+
+
+  <script src="/mabenchi/app/js/script.js"></script>
+</body>
+</html>

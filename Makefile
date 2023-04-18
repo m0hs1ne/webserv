@@ -1,8 +1,8 @@
 SHELL = /bin/bash
 
-NAME		= webServ
+NAME		= webserv
 CC			= g++
-CFLAGS		= -Wall -Werror -Wextra -std=c++98 -fsanitize=address
+CFLAGS		= -Wall -Werror -Wextra -std=c++98
 RM			= rm -f
 ECHO		= echo -e
 
@@ -18,7 +18,9 @@ CYAN		=	\033[0;96m
 WHITE		=	\033[0;97m
 
 
-SRC = main.cpp parseConfig.cpp
+SRC = Server/main.cpp Server/webserv.cpp server/ParsingConfig.cpp Server/Request.cpp Server/Response.cpp code/tools.cpp \
+	code/GetMethod/handlingGet.cpp code/GetMethod/Autoindex.cpp  code/handlingCgi/handlingCGI.cpp code/PostMethod/handlingPost.cpp \
+	code/DeleteMethod/handlingDelete.cpp
 
 all:		$(NAME)
 
@@ -32,7 +34,9 @@ clean:
 fclean:		clean
 			@$(RM) $(NAME)
 			@find . -name ".DS_Store" -delete
-			@rm -rf webServ.dSYM
+			@rm -rf webserv.dSYM
+			@rm -rf Content/cgi-bin/sessions/*
+			@rm -rf Content/cgi-bin/user_database
 			@$(ECHO) -n "$(CYAN)[webServ]:\texec. files$(DEF_COLOR)$(GREEN)  => Cleaned!$(DEF_COLOR)\n"
 
 
