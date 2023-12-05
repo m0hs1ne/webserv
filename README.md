@@ -4,7 +4,7 @@ This is a non-blocking HTTP server implementation that uses the kqueue system ca
 
 We built it together:
 [Mabenchi](https://github.com/MarouaneBenchiekh)
-[Zakaria](https://github.com/zakariaboudaira)
+[Zakaria2ee](https://github.com/Zakaria2ee)
 
 ## Features
 
